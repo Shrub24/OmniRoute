@@ -380,6 +380,69 @@ const KIMI_CODING_MODELS_CONFIG: ProviderModelsConfigEntry = {
 };
 
 // Provider models endpoints configuration
+/**
+ * CheaperInference live text catalogue (`/v1/models?type=text`, Bearer).
+ *
+ * Each entry declares the upstream `endpoint` that serves it and a `capabilities`
+ * object. Map the provider-declared endpoint to the existing runtime targetFormat
+ * representation — only a `responses` declaration emits one; chat or an
+ * unrecognized endpoint stays untagged so the default chat-completions route
+ * applies (never infer the protocol from the model name). Capabilities are
+ * mirrored to the fields normalizeDiscoveredModels persists. The rest of each
+ * record is spread through so provider-side context/token fields survive
+ * normalization. Handles the `{data:[…]}` envelope, `{models:[…]}`, and a bare
+ * OpenAI-style list identically.
+ */
+type CheaperInferenceCatalogRecord = Record<string, unknown>;
+
+function cheaperInferenceCatalogRecords(value: unknown): CheaperInferenceCatalogRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is CheaperInferenceCatalogRecord =>
+      Boolean(item) && typeof item === "object" && !Array.isArray(item)
+  );
+}
+
+export function parseCheaperInferenceTextModels(data: unknown): CheaperInferenceCatalogRecord[] {
+  let items = cheaperInferenceCatalogRecords(data);
+  if (items.length === 0 && data && typeof data === "object" && !Array.isArray(data)) {
+    const envelope = data as { data?: unknown; models?: unknown };
+    items = cheaperInferenceCatalogRecords(envelope.data);
+    if (items.length === 0) items = cheaperInferenceCatalogRecords(envelope.models);
+  }
+  return items
+    .filter((model) => {
+      const id = typeof model.id === "string" ? model.id.trim() : "";
+      return id.length > 0 && (model.type === undefined || model.type === "text");
+    })
+    .map((model) => {
+      const capabilities: CheaperInferenceCatalogRecord =
+        model.capabilities &&
+        typeof model.capabilities === "object" &&
+        !Array.isArray(model.capabilities)
+          ? (model.capabilities as CheaperInferenceCatalogRecord)
+          : {};
+      const endpoint = typeof model.endpoint === "string" ? model.endpoint.toLowerCase() : "";
+      const name = typeof model.name === "string" && model.name.trim() ? model.name : model.id;
+      return {
+        ...model,
+        name,
+        ...(endpoint.includes("responses") ? { targetFormat: "openai-responses" } : {}),
+        ...(capabilities.vision === true || capabilities.supportsVision === true
+          ? { supportsVision: true }
+          : {}),
+        ...(capabilities.reasoning === true || capabilities.supportsReasoning === true
+          ? { supportsThinking: true }
+          : {}),
+        ...(capabilities.tools === true ||
+        capabilities.toolCalling === true ||
+        capabilities.tool_calling === true
+          ? { supportsTools: true }
+          : {}),
+      };
+    });
+}
+
 export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> = {
   alibaba: ALIBABA_MODEL_STUDIO_MODELS_CONFIG,
   "alibaba-cn": ALIBABA_MODEL_STUDIO_MODELS_CONFIG,
@@ -794,5 +857,16 @@ export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> =
     authHeader: "Authorization",
     authPrefix: "Bearer ",
     parseResponse: (data) => data.data || data.models || [],
+  },
+  // CheaperInference live text catalogue — provider-local endpoint/capability
+  // mapping (see parseCheaperInferenceTextModels). A failed fetch degrades to
+  // the existing cache/local-catalog fallback in the models route.
+  cheaperinference: {
+    url: "https://api.cheaperinference.com/v1/models?type=text",
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    authHeader: "Authorization",
+    authPrefix: "Bearer ",
+    parseResponse: (data) => parseCheaperInferenceTextModels(data),
   },
 };

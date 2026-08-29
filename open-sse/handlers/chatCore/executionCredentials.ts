@@ -165,6 +165,17 @@ export function resolveExecutionCredentials(opts: {
     providerSpecificData.targetFormat = targetFormat;
   }
 
+  // CheaperInference live-catalogue models (discovered via /v1/models?type=text)
+  // carry their Responses declaration as synced per-model metadata and have no
+  // static PROVIDER_MODELS row, so CheaperInferenceExecutor.buildUrl cannot see
+  // the resolved format through getModelTargetFormat(). Thread it through the
+  // same execution-context channel as the github/#7364 fixes; the executor's
+  // store:false injection reads the identical value, keeping URL and payload in
+  // lockstep.
+  if (targetFormat === FORMATS.OPENAI_RESPONSES && provider === "cheaperinference") {
+    providerSpecificData.targetFormat = targetFormat;
+  }
+
   applyKimiExecutionMetadata(providerSpecificData, provider, targetFormat, modelInfo);
   const withApiType = {
     ...nextCredentials,

@@ -17,10 +17,10 @@ import { getModelTargetFormat, PROVIDER_ID_TO_ALIAS } from "../config/providerMo
  *     forwarded: the endpoint cannot honour it, and forwarding would 400.
  *
  *  2. Chat and Responses live at DIFFERENT URLs (unlike providers that switch on a
- *     path suffix). The per-model `targetFormat` registry tag is the single source of
- *     truth for which surface a model uses — the same tag chatCore reads to translate
- *     the body — so resolving the URL from it keeps URL and payload in lockstep.
- *     Same pattern as executors/xai.ts (9router#2439).
+ *     path suffix). The per-request resolved targetFormat (see
+ *     usesResponsesEndpoint) decides which surface a model uses — the same value
+ *     chatCore reads to translate the body — so resolving the URL from it keeps URL
+ *     and payload in lockstep. Same pattern as executors/xai.ts (9router#2439).
  */
 export class CheaperInferenceExecutor extends BaseExecutor {
   constructor(provider = "cheaperinference") {
@@ -30,19 +30,34 @@ export class CheaperInferenceExecutor extends BaseExecutor {
   /**
    * True when this model is served by the native /v1/responses endpoint.
    *
+   * Prefer the per-request RESOLVED wire format that chatCore threads onto
+   * `providerSpecificData.targetFormat` (executionCredentials.ts): live-catalogue
+   * models absent from the static registry have no tag for getModelTargetFormat to
+   * find, and synced per-model metadata would otherwise never reach the URL. The
+   * static registry tag stays the fallback (#2905/#7364 pattern, as in github.ts).
+   *
    * PROVIDER_MODELS is keyed by provider ALIAS ("cinf"), while PROVIDERS is keyed by
    * provider ID ("cheaperinference") — so `this.provider` cannot be passed straight
    * through the way executors/xai.ts does (there the alias equals the id, which hides
    * the distinction). Resolve the alias first or every lookup silently returns null
    * and every Responses request 400s upstream.
    */
-  private usesResponsesEndpoint(model: string): boolean {
+  private usesResponsesEndpoint(model: string, credentials?: ProviderCredentials | null): boolean {
+    const resolved = credentials?.providerSpecificData?.targetFormat;
+    if (typeof resolved === "string" && resolved.length > 0) {
+      return resolved === "openai-responses";
+    }
     const alias = PROVIDER_ID_TO_ALIAS[this.provider] || this.provider;
     return getModelTargetFormat(alias, model) === "openai-responses";
   }
 
-  buildUrl(model: string, _stream: boolean, _urlIndex = 0): string {
-    if (this.usesResponsesEndpoint(model)) {
+  buildUrl(
+    model: string,
+    _stream: boolean,
+    _urlIndex = 0,
+    credentials?: ProviderCredentials | null
+  ): string {
+    if (this.usesResponsesEndpoint(model, credentials)) {
       return this.config.responsesBaseUrl || this.config.baseUrl;
     }
     return this.config.baseUrl;
@@ -58,7 +73,7 @@ export class CheaperInferenceExecutor extends BaseExecutor {
     if (!cleanedBody || typeof cleanedBody !== "object" || Array.isArray(cleanedBody)) {
       return cleanedBody;
     }
-    if (!this.usesResponsesEndpoint(model)) {
+    if (!this.usesResponsesEndpoint(model, credentials)) {
       // Chat Completions rejects unknown params — never add `store` on that surface.
       return cleanedBody;
     }

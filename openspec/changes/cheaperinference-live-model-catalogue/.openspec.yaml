@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-08-30
+goal: Discover live CheaperInference text models while retaining endpoint
+  metadata and static fallbacks.
