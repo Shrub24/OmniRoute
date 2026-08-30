@@ -1565,3 +1565,36 @@ test("buildStaticProviderEntry: nested combo-ref context is the bottleneck acros
   assert.ok(parent, "Parent combo must be in the static catalog");
   assert.equal(parent.limit?.context, 8_000);
 });
+
+// features.combos=false must suppress the shim's /api/combos call — the
+// sibling fetchers (autoCombos/enrichment/compression/connections) all
+// self-gate; combos historically leaked, burning a cold-start request on a
+// deployment that opted out.
+test("config: features.combos=false → combos fetcher never called", async () => {
+  const readAuthJson = stubReadAuthJson({
+    "opencode-omniroute": { type: "api", key: "sk-test-1", baseURL: "https://or.example.com/v1" },
+  });
+  const fetcher = stubModelsFetcher([MODEL_CLAUDE]);
+  const combosFetcher = stubCombosFetcher([COMBO_CLAUDE_TIER]);
+  const logger = captureWarn();
+
+  const hook = createOmniRouteConfigHook(
+    { providerId: "omniroute", features: { combos: false, diskCache: false } },
+    { readAuthJson, fetcher, combosFetcher, logger }
+  );
+  const input = makeInput();
+  await hook(input);
+
+  assert.equal(fetcher.callCount(), 1, "models still fetched");
+  assert.equal(combosFetcher.callCount(), 0, "no combos fetch when features.combos=false");
+  const provider = (input as { provider: Record<string, OmniRouteStaticProviderEntry> }).provider;
+  assert.ok(
+    provider["opencode-omniroute"].models["claude-sonnet-4-6"],
+    "models block intact"
+  );
+  assert.equal(
+    "claude-tier" in provider["opencode-omniroute"].models,
+    false,
+    "no combo rows"
+  );
+});

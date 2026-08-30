@@ -5261,6 +5261,7 @@ export function createOmniRouteConfigHook(
     sink.call(logger, message);
   };
   const features = resolved.features ?? {};
+  const wantCombos = features.combos !== false;
   const wantAutoCombos = features.autoCombos !== false;
   const wantEnrichment = features.enrichment !== false;
   const wantCompressionMeta = features.compressionMetadata === true;
@@ -5413,6 +5414,7 @@ export function createOmniRouteConfigHook(
         };
 
         const doCombos = async (): Promise<void> => {
+          if (!wantCombos) return;
           try {
             localRawCombos = await combosFetcher(baseURL, managementReadToken, 10_000);
           } catch (err) {
