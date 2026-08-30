@@ -1,0 +1,80 @@
+# Fork-owned OCI build — pushes the deploy branch's server image to GHCR.
+#
+# Deliberately separate from upstream's docker-publish.yml (Docker Hub +
+# diegosouzapw/omniroute + release-channel logic the fork does not use). This
+# workflow:
+#   - triggers on push to the deploy branch and manual dispatch
+#   - builds the lean runner-base target only (no web-cookie Chromium flavor)
+#   - pushes linux/amd64 to ghcr.io/<owner>/omniroute as :edge (mutable) and
+#     :sha-<short> (immutable per-commit)
+#
+# Hosted-runner safety is inherited from the Dockerfile defaults (webpack via
+# OMNIROUTE_USE_TURBOPACK=0 on 7 GB runners, 1 page-data worker, 6 GB heap
+# ceiling) — the same defaults upstream's arm64 hosted builds use.
+name: OCI Build
+
+on:
+  push:
+    branches:
+      - deploy/edge
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+concurrency:
+  group: oci-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build and push (amd64)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Assert Docker Engine
+        run: docker info
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image name and tags
+        id: meta
+        run: |
+          set -euo pipefail
+          # Lowercase owner — GHCR requires it (GitHub logins may contain capitals).
+          OWNER="$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          echo "image=ghcr.io/${OWNER}/omniroute" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: runner-base
+          platforms: linux/amd64
+          # Hosted runner (7 GB): webpack, not Turbopack — same as upstream's
+          # hosted arm64 path.
+          build-args: |
+            OMNIROUTE_USE_TURBOPACK=0
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:edge
+            ${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.sha_tag }}
+          cache-from: type=gha,scope=oci-edge
+          cache-to: type=gha,scope=oci-edge,mode=max,ignore-error=true
