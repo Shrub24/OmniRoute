@@ -1302,6 +1302,25 @@ export const defaultOmniRouteModelsFetcher: OmniRouteModelsFetcher = async (
  *      shape clean for combo entries that only carry context_length.
  */
 
+/**
+ * Turn `caps.effort_tiers` into OC's variants record (tier -> `{ reasoningEffort: tier }`).
+ * Absent/empty/malformed => `undefined` so callers OMIT the key entirely (an empty
+ * variants object would suppress opencode's built-in fallback for the model).
+ * Shared by the dynamic ModelV2 path and the static config shim: OC's provider
+ * reducer merges config-declared variants last, so both surfaces must declare the
+ * same vocabulary for it to be version/path-invariant.
+ */
+function effortTierVariants(
+  caps: { effort_tiers?: string[] } | undefined
+): Record<string, { reasoningEffort: string }> | undefined {
+  const declaredTiers = Array.isArray(caps?.effort_tiers)
+    ? caps.effort_tiers.filter((t): t is string => typeof t === "string" && t.length > 0)
+    : [];
+  return declaredTiers.length > 0
+    ? Object.fromEntries(declaredTiers.map((tier) => [tier, { reasoningEffort: tier }]))
+    : undefined;
+}
+
 export function mapRawModelToModelV2(
   raw: OmniRouteRawModelEntry,
   ctx: { providerId: string; baseURL: string; apiFormat?: { anthropicPrefixes?: string[] } }
@@ -1310,15 +1329,8 @@ export function mapRawModelToModelV2(
   // effort_tiers loop: server-declared tiers become ModelV2 variants so the
   // UI offers exactly the tiers OmniRoute vouches for (instead of opencode's
   // invented [low, medium, high] fallback). Blind: filtering/exclusion rules
-  // live server-side. Absent/empty/malformed => key omitted ENTIRELY (an
-  // empty variants object would suppress opencode's fallback for this model).
-  const declaredTiers = Array.isArray(caps.effort_tiers)
-    ? caps.effort_tiers.filter((t): t is string => typeof t === "string" && t.length > 0)
-    : [];
-  const variants =
-    declaredTiers.length > 0
-      ? Object.fromEntries(declaredTiers.map((tier) => [tier, { reasoningEffort: tier }]))
-      : undefined;
+  // live server-side. Semantics + empty handling in `effortTierVariants`.
+  const variants = effortTierVariants(caps);
   const inMods = new Set(raw.input_modalities ?? ["text"]);
   const outMods = new Set(raw.output_modalities ?? ["text"]);
 
@@ -4193,6 +4205,15 @@ export interface OmniRouteStaticModelEntry {
   /** Model supports function / tool calling. */
   tool_call?: boolean;
   /**
+   * Reasoning-effort variants declared by the server (`caps.effort_tiers`),
+   * same shape the dynamic ModelV2 path emits. OC's provider reducer merges
+   * config-declared variants LAST, so the static block must carry them — the
+   * dynamic hook's variants do not survive the config-provider merge on
+   * OC ≥1.16 (key/npm mismatch drops them). Omitted when the server declares
+   * no tiers, leaving OC's built-in fallback standing.
+   */
+  variants?: Record<string, { reasoningEffort: string }>;
+  /**
    * Per-million-token cost. Maps from OmniRoute `/api/pricing` shape:
    * `input`/`output` pass through; `cached` → `cache_read`;
    * `cache_creation` → `cache_write`. Omitted when no pricing slot resolves.
@@ -4409,6 +4430,12 @@ export function buildStaticProviderEntry(
     if (typeof caps.tool_calling === "boolean") {
       entry.tool_call = caps.tool_calling;
     }
+
+    // Server-declared effort tiers become variants on the static block too —
+    // OC merges config-declared variants last, so this is the vocabulary that
+    // survives on every OC version/path (see OmniRouteStaticModelEntry).
+    const tierVariants = effortTierVariants(caps);
+    if (tierVariants) entry.variants = tierVariants;
 
     // OC's SDK schema requires BOTH `context` and `output` when `limit` is
     // present. We previously emitted `limit.input` too, but the SDK reader
