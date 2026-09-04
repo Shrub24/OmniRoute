@@ -3138,6 +3138,7 @@ export async function handleChatCore({
                             userAgent
                           ),
                           clientResponseFormat,
+                          upstreamRequestFormat: targetFormat,
                           onCredentialsRefreshed,
                           skipUpstreamRetry,
                           contextEditing: { enabled: contextEditingEnabled },
@@ -3454,6 +3455,7 @@ export async function handleChatCore({
                                 userAgent
                               ),
                               clientResponseFormat,
+                              upstreamRequestFormat: targetFormat,
                               onCredentialsRefreshed,
                               skipUpstreamRetry,
                               contextEditing: { enabled: contextEditingEnabled },
@@ -3992,6 +3994,7 @@ export async function handleChatCore({
               upstreamExtraHeaders: buildUpstreamHeadersForExecute(retryModelId),
               clientHeaders: buildExecutorClientHeaders(clientRawRequest?.headers, userAgent),
               clientResponseFormat,
+              upstreamRequestFormat: targetFormat,
               onCredentialsRefreshed,
               skipUpstreamRetry: isCombo,
               contextEditing: { enabled: contextEditingEnabled },

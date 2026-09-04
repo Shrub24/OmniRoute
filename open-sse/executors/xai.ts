@@ -59,9 +59,12 @@ export class XaiExecutor extends BaseExecutor {
     model: string,
     _stream: boolean,
     _urlIndex = 0,
-    credentials: ProviderCredentials | null = null
+    credentials: ProviderCredentials | null = null,
+    upstreamRequestFormat?: string | null
   ) {
-    if (getModelTargetFormat(this.provider, model) === "openai-responses") {
+    // chatCore-resolved wire format (DB override included) wins; static tag is fallback.
+    const effectiveFormat = upstreamRequestFormat ?? getModelTargetFormat(this.provider, model);
+    if (effectiveFormat === "openai-responses") {
       return this.config.responsesBaseUrl || this.config.baseUrl;
     }
     if (isResponsesEndpointPath(credentials?.requestEndpointPath)) {
@@ -120,7 +123,8 @@ export class XaiExecutor extends BaseExecutor {
     model: string,
     body: unknown,
     stream: boolean,
-    credentials: ProviderCredentials
+    credentials: ProviderCredentials,
+    upstreamRequestFormat?: string | null
   ): unknown {
     const cleaned = super.transformRequest(model, body, stream, credentials);
     const record = asRecord(cleaned);
@@ -131,9 +135,10 @@ export class XaiExecutor extends BaseExecutor {
     delete out._nativeXaiResponsesPassthrough;
     delete out._nativeCodexPassthrough;
 
+    const effectiveFormat = upstreamRequestFormat ?? getModelTargetFormat(this.provider, model);
     const useResponses =
       nativeXaiPassthrough ||
-      getModelTargetFormat(this.provider, model) === "openai-responses" ||
+      effectiveFormat === "openai-responses" ||
       isResponsesEndpointPath(credentials?.requestEndpointPath);
 
     // #10165: chat/completions clients send messages + max_tokens; xAI /v1/responses

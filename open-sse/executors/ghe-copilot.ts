@@ -107,9 +107,16 @@ export class GheCopilotExecutor extends GithubExecutor {
       : model;
   }
 
-  override buildUrl(model: string, stream: boolean, urlIndex = 0, credentials: ProviderCredentials | null = null): string {
+  override buildUrl(
+    model: string,
+    stream: boolean,
+    urlIndex = 0,
+    credentials: ProviderCredentials | null = null,
+    upstreamRequestFormat?: string | null
+  ): string {
     const bareModel = this.stripPrefix(model);
-    const targetFormat = getModelTargetFormat("ghe-copilot", bareModel);
+    // chatCore-resolved wire format (DB override included) wins; static tag is fallback.
+    const targetFormat = upstreamRequestFormat ?? getModelTargetFormat("ghe-copilot", bareModel);
     // Claude models: ALWAYS route to the Anthropic-native /v1/messages shim
     // (same as github.com Copilot), matched on the model NAME so a Claude id
     // that is missing its registry targetFormat tag still gets the native shim

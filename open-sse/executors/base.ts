@@ -202,6 +202,11 @@ export type ExecuteInput = {
    * this to apply client-format-aware policies such as `</think>` close-marker
    * suppression. */
   clientResponseFormat?: string | null;
+  /** Final upstream wire format already resolved by chatCore (DB apiFormat
+   * override included). Executors that pick a URL/surface from the static
+   * registry must prefer this when present — the registry cannot see UI/DB
+   * overrides. Absent outside the chatCore path (static fallback applies). */
+  upstreamRequestFormat?: string | null;
   /** Callback to persist tokens that are proactively refreshed during execution.
    * Accepts a partial credentials patch (e.g. `{ accessToken, refreshToken }` or
    * `{ testStatus: "expired", isActive: false }`); the caller merges into the
@@ -372,10 +377,12 @@ export class BaseExecutor {
     model: string,
     stream: boolean,
     urlIndex = 0,
-    credentials: ProviderCredentials | null = null
+    credentials: ProviderCredentials | null = null,
+    upstreamRequestFormat?: string | null
   ) {
     void model;
     void stream;
+    void upstreamRequestFormat;
     if (this.provider?.startsWith?.("openai-compatible-")) {
       const psd = credentials?.providerSpecificData;
       const baseUrl = typeof psd?.baseUrl === "string" ? psd.baseUrl : "https://api.openai.com/v1";
@@ -540,11 +547,13 @@ export class BaseExecutor {
     model: string,
     body: unknown,
     stream: boolean,
-    credentials: ProviderCredentials
+    credentials: ProviderCredentials,
+    upstreamRequestFormat?: string | null
   ): unknown {
     void model;
     void stream;
     void credentials;
+    void upstreamRequestFormat;
 
     // Fix #1674: Remove empty string values from optional parameters
     // like tool descriptions to avoid upstream validation failures.
@@ -719,6 +728,7 @@ export class BaseExecutor {
       skipUpstreamRetry = false,
       onCredentialsRefreshed,
       contextEditing,
+      upstreamRequestFormat,
     } = input;
     const fallbackCount = this.getFallbackCount();
     let lastError: unknown = null;
@@ -843,7 +853,7 @@ export class BaseExecutor {
         body,
         activeCredentials
       );
-      const url = this.buildUrl(model, stream, urlIndex, requestCredentials);
+      const url = this.buildUrl(model, stream, urlIndex, requestCredentials, upstreamRequestFormat);
       const headers = this.buildHeaders(
         requestCredentials,
         stream,
@@ -884,7 +894,8 @@ export class BaseExecutor {
         model,
         body,
         stream,
-        requestCredentials
+        requestCredentials,
+        upstreamRequestFormat
       );
       let transformedBody = sanitizeReasoningEffortForProvider(
         rawTransformedBody,

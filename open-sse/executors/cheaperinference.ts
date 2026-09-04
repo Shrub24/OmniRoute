@@ -36,13 +36,21 @@ export class CheaperInferenceExecutor extends BaseExecutor {
    * the distinction). Resolve the alias first or every lookup silently returns null
    * and every Responses request 400s upstream.
    */
-  private usesResponsesEndpoint(model: string): boolean {
+  private usesResponsesEndpoint(model: string, upstreamRequestFormat?: string | null): boolean {
+    // chatCore-resolved wire format (DB override included) wins; static tag is fallback.
+    if (upstreamRequestFormat) return upstreamRequestFormat === "openai-responses";
     const alias = PROVIDER_ID_TO_ALIAS[this.provider] || this.provider;
     return getModelTargetFormat(alias, model) === "openai-responses";
   }
 
-  buildUrl(model: string, _stream: boolean, _urlIndex = 0): string {
-    if (this.usesResponsesEndpoint(model)) {
+  buildUrl(
+    model: string,
+    _stream: boolean,
+    _urlIndex = 0,
+    _credentials: ProviderCredentials | null = null,
+    upstreamRequestFormat?: string | null
+  ): string {
+    if (this.usesResponsesEndpoint(model, upstreamRequestFormat)) {
       return this.config.responsesBaseUrl || this.config.baseUrl;
     }
     return this.config.baseUrl;
@@ -52,13 +60,14 @@ export class CheaperInferenceExecutor extends BaseExecutor {
     model: string,
     body: unknown,
     stream: boolean,
-    credentials: ProviderCredentials
+    credentials: ProviderCredentials,
+    upstreamRequestFormat?: string | null
   ): unknown {
     const cleanedBody = super.transformRequest(model, body, stream, credentials);
     if (!cleanedBody || typeof cleanedBody !== "object" || Array.isArray(cleanedBody)) {
       return cleanedBody;
     }
-    if (!this.usesResponsesEndpoint(model)) {
+    if (!this.usesResponsesEndpoint(model, upstreamRequestFormat)) {
       // Chat Completions rejects unknown params — never add `store` on that surface.
       return cleanedBody;
     }
