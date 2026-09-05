@@ -30,11 +30,11 @@ export class CheaperInferenceExecutor extends BaseExecutor {
   /**
    * True when this model is served by the native /v1/responses endpoint.
    *
-   * Prefer the per-request RESOLVED wire format that chatCore threads onto
-   * `providerSpecificData.targetFormat` (executionCredentials.ts): live-catalogue
-   * models absent from the static registry have no tag for getModelTargetFormat to
-   * find, and synced per-model metadata would otherwise never reach the URL. The
-   * static registry tag stays the fallback (#2905/#7364 pattern, as in github.ts).
+   * Precedence (same as executors/github.ts): the explicit chatCore-resolved
+   * `upstreamRequestFormat` (DB override included) wins; then the per-request
+   * `providerSpecificData.targetFormat` that executionCredentials.ts threads
+   * through (live-catalogue models absent from the static registry have no tag
+   * for getModelTargetFormat to find); the static registry tag stays last.
    *
    * PROVIDER_MODELS is keyed by provider ALIAS ("cinf"), while PROVIDERS is keyed by
    * provider ID ("cheaperinference") — so `this.provider` cannot be passed straight
@@ -42,7 +42,13 @@ export class CheaperInferenceExecutor extends BaseExecutor {
    * the distinction). Resolve the alias first or every lookup silently returns null
    * and every Responses request 400s upstream.
    */
-  private usesResponsesEndpoint(model: string, credentials?: ProviderCredentials | null): boolean {
+  private usesResponsesEndpoint(
+    model: string,
+    credentials?: ProviderCredentials | null,
+    upstreamRequestFormat?: string | null
+  ): boolean {
+    // chatCore-resolved wire format (DB override included) wins; static tag is fallback.
+    if (upstreamRequestFormat) return upstreamRequestFormat === "openai-responses";
     const resolved = credentials?.providerSpecificData?.targetFormat;
     if (typeof resolved === "string" && resolved.length > 0) {
       return resolved === "openai-responses";
@@ -55,9 +61,10 @@ export class CheaperInferenceExecutor extends BaseExecutor {
     model: string,
     _stream: boolean,
     _urlIndex = 0,
-    credentials?: ProviderCredentials | null
+    credentials?: ProviderCredentials | null,
+    upstreamRequestFormat?: string | null
   ): string {
-    if (this.usesResponsesEndpoint(model, credentials)) {
+    if (this.usesResponsesEndpoint(model, credentials, upstreamRequestFormat)) {
       return this.config.responsesBaseUrl || this.config.baseUrl;
     }
     return this.config.baseUrl;
@@ -67,13 +74,14 @@ export class CheaperInferenceExecutor extends BaseExecutor {
     model: string,
     body: unknown,
     stream: boolean,
-    credentials: ProviderCredentials
+    credentials: ProviderCredentials,
+    upstreamRequestFormat?: string | null
   ): unknown {
     const cleanedBody = super.transformRequest(model, body, stream, credentials);
     if (!cleanedBody || typeof cleanedBody !== "object" || Array.isArray(cleanedBody)) {
       return cleanedBody;
     }
-    if (!this.usesResponsesEndpoint(model, credentials)) {
+    if (!this.usesResponsesEndpoint(model, credentials, upstreamRequestFormat)) {
       // Chat Completions rejects unknown params — never add `store` on that surface.
       return cleanedBody;
     }

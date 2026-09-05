@@ -77,7 +77,8 @@ export class GithubExecutor extends BaseExecutor {
     model: string,
     _stream: boolean,
     _urlIndex = 0,
-    credentials?: ProviderCredentials | null
+    credentials?: ProviderCredentials | null,
+    upstreamRequestFormat?: string | null
   ) {
     // #2905/#7364-pattern: a custom Copilot model's per-model targetFormat
     // override isn't in the static PROVIDER_MODELS registry, so
@@ -87,10 +88,11 @@ export class GithubExecutor extends BaseExecutor {
     const overrideTargetFormat = (
       credentials as { providerSpecificData?: { targetFormat?: unknown } }
     )?.providerSpecificData?.targetFormat;
+    // chatCore-resolved wire format (DB override included) wins over both.
     const targetFormat =
-      typeof overrideTargetFormat === "string"
-        ? overrideTargetFormat
-        : getModelTargetFormat("gh", model);
+      upstreamRequestFormat ??
+      (typeof overrideTargetFormat === "string" ? overrideTargetFormat : null) ??
+      getModelTargetFormat("gh", model);
     // Claude models: ALWAYS route to Copilot's Anthropic-native /v1/messages
     // shim — the only Copilot endpoint that surfaces prompt-cache token counts
     // for Claude and avoids a lossy round-trip of tool_use/tool_result/thinking
@@ -149,7 +151,13 @@ export class GithubExecutor extends BaseExecutor {
     return [{ role: "system", content: formatInstruction }, ...messages];
   }
 
-  transformRequest(model: string, body: any, stream: boolean, credentials: any): any {
+  transformRequest(
+    model: string,
+    body: any,
+    stream: boolean,
+    credentials: any,
+    upstreamRequestFormat?: string | null
+  ): any {
     void stream;
     void credentials;
 
@@ -163,7 +171,9 @@ export class GithubExecutor extends BaseExecutor {
     // content-part flattening would destroy native tool_use/tool_result/thinking
     // blocks, and the native endpoint (unlike Copilot's /chat/completions) honors
     // assistant-message prefill. Port of decolua/9router#2608 (author: yidecode).
-    const isClaudeNative = getModelTargetFormat("gh", model) === "claude";
+    // chatCore-resolved wire format wins; static tag is fallback.
+    const isClaudeNative =
+      upstreamRequestFormat === "claude" || getModelTargetFormat("gh", model) === "claude";
 
     if (Array.isArray(sourceBody.input)) {
       modifiedBody.input = sanitizeResponsesInputItems(sourceBody.input, false);

@@ -225,7 +225,7 @@ export class DefaultExecutor extends BaseExecutor {
     }
   }
 
-  buildUrl(model, stream, urlIndex = 0, credentials = null) {
+  buildUrl(model, stream, urlIndex = 0, credentials = null, upstreamRequestFormat = null) {
     void model;
     void stream;
     void urlIndex;
@@ -289,7 +289,9 @@ export class DefaultExecutor extends BaseExecutor {
             ? (credentials.providerSpecificData.baseUrl as string)
             : null;
         const chatUrl = customBaseUrl ? normalizeOpenAIChatUrl(customBaseUrl) : this.config.baseUrl;
-        if (getModelTargetFormat("openai", model) === "openai-responses") {
+        // chatCore-resolved wire format (DB override included) wins; static tag is fallback.
+        const openaiFormat = upstreamRequestFormat ?? getModelTargetFormat("openai", model);
+        if (openaiFormat === "openai-responses") {
           return chatUrl.replace(/\/chat\/completions\/?$/, "/responses");
         }
         return chatUrl;
@@ -415,7 +417,9 @@ export class DefaultExecutor extends BaseExecutor {
         const manualBaseUrl =
           typeof psd?.baseUrl === "string" && psd.baseUrl.trim() ? psd.baseUrl.trim() : null;
         const forceResponses = psd?._omnirouteForceResponsesUpstream === true;
-        const modelTarget = getModelTargetFormat("poe", model);
+        // chatCore-resolved wire format (DB override included) wins; static tag,
+        // then the threaded connection override, are fallback.
+        const modelTarget = upstreamRequestFormat ?? getModelTargetFormat("poe", model);
         const connectionTarget =
           typeof psd?.targetFormat === "string" ? (psd.targetFormat as string) : null;
         const effectiveTarget = modelTarget || connectionTarget;
