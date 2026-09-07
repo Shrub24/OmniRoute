@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "रीसेट-अवेयर आरआर",
     "resetAwareDesc": "शेष कोटा को 5 घंटे और साप्ताहिक रीसेट के विरुद्ध संतुलित करता है, फिर समान स्कोर को राउंड-रॉबिन करता है",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "फ़्यूज़न",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "सबसे सस्ते उपलब्ध खाते को प्राथमिकता दें",
     "resetAware": "रीसेट-अवेयर आरआर",
     "resetAwareDesc": "स्वस्थ शेष कोटा और निकट रीसेट वाले खातों को प्राथमिकता दें",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "चिपचिपी सीमा",
@@ -12982,7 +12986,7 @@
         "description": "प्रदाता-मॉडल सिंक्रनाइज़ेशन के बाद, लाइव कैटलॉग से ~/.codex/*.config.toml प्रोफाइल को पुनरुत्पादित करें। यह सक्रिय या डिफ़ॉल्ट Codex कॉन्फ़िगरेशन को कभी नहीं बदलता है और डिफ़ॉल्ट रूप से बंद रहता है।"
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "प्रदाता-मॉडल सिंक्रनाइज़ेशन के बाद, लाइव कैटलॉग से ~/.claude/profiles/<name>/settings.json प्रोफाइल को पुनरुत्पादित करें। यह सक्रिय या डिफ़ॉल्ट Claude कॉन्फ़िगरेशन को कभी नहीं बदलता है और डिफ़ॉल्ट रूप से बंद रहता है।"
+        "description": "प्रदाता-मॉडल सिंक्रनाइज़ेशन के बाद, लाइव कैटलॉग से ~/.claude/profiles/'<name>'/settings.json प्रोफाइल को पुनरुत्पादित करें। यह सक्रिय या डिफ़ॉल्ट Claude कॉन्फ़िगरेशन को कभी नहीं बदलता है और डिफ़ॉल्ट रूप से बंद रहता है।"
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "स्थानीय इंस्टेंस स्वास्थ्य-जांच एंडपॉइंट को अक्षम करें।"
@@ -13133,6 +13137,7 @@
     "segmentHint": "प्रत्येक सेगमेंट = एक मुफ़्त पूल · पूल-डीडुप्लिकेटेड, सटीक गणना (कोई बढ़ी हुई रेट-लिमिट सीमा नहीं)।",
     "boost": "एकमुश्त $10 OpenRouter टॉप-अप के साथ ~{tokens} अधिक/माह अनलॉक करें (50 → 1000 req/day)",
     "uncapped": "स्थायी रूप से मुफ़्त, कोई प्रकाशित सीमा नहीं (रेट-लिमिटेड) — वास्तविक एक्सेस, हेडलाइन में नहीं गिना गया:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# मॉडल} other {# मॉडल}} ToS-प्रतिबंधित के रूप में चिह्नित — आप तय करें",
     "provider": "प्रदाता",
     "model": "मॉडल",

@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "RR consapevole del ripristino",
     "resetAwareDesc": "Bilancia la quota rimanente rispetto a 5 ore e ai reimpostazioni settimanali, quindi esegue il round robin di punteggi simili",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusione",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Preferisci il conto più economico disponibile",
     "resetAware": "RR consapevole del ripristino",
     "resetAwareDesc": "Preferisci account con una quota rimanente sana e reimpostazioni più vicine",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Limite appiccicoso",
@@ -12982,7 +12986,7 @@
         "description": "Dopo la sincronizzazione provider-modello, rigenera i profili ~/.codex/*.config.toml dal catalogo live. Questa operazione non modifica mai la configurazione attiva o predefinita di Codex ed è disattivata per impostazione predefinita."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Dopo la sincronizzazione provider-modello, rigenera i profili ~/.claude/profiles/<name>/settings.json dal catalogo live. Questa operazione non modifica mai la configurazione attiva o predefinita di Claude ed è disattivata per impostazione predefinita."
+        "description": "Dopo la sincronizzazione provider-modello, rigenera i profili ~/.claude/profiles/'<name>'/settings.json dal catalogo live. Questa operazione non modifica mai la configurazione attiva o predefinita di Claude ed è disattivata per impostazione predefinita."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Disabilita l'endpoint di health check dell'istanza locale."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Ogni segmento = un pool gratuito · pool deduplicato, conteggio onesto (nessun limite massimo di rate-limit gonfiato).",
     "boost": "Sblocca ~{tokens} in più al mese con una ricarica una tantum di $10 su OpenRouter (50 → 1000 rich/giorno)",
     "uncapped": "Permanentemente gratuito, nessun limite pubblicato (soggetto a rate-limit) — accesso reale, non conteggiato nel titolo:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# modello contrassegnato come limitato dai ToS} other {# modelli contrassegnati come limitati dai ToS}} — decidi tu",
     "provider": "Provider",
     "model": "Modello",

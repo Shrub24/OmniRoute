@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Set Semula-Sedar RR",
     "resetAwareDesc": "Baki baki kuota dengan tetapan semula 5j dan mingguan, kemudian round-robin markah yang serupa",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Gabungan",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Pilih akaun termurah yang tersedia",
     "resetAware": "Set Semula-Sedar RR",
     "resetAwareDesc": "Lebih suka akaun dengan baki kuota yang sihat dan penetapan semula yang lebih hampir",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Had Melekit",
@@ -12982,7 +12986,7 @@
         "description": "Selepas penyegerakan penyedia-model, jana semula profil ~/.codex/*.config.toml daripada katalog langsung. Ini tidak pernah mengubah konfigurasi Codex yang aktif atau lalai dan dinyahdayakan secara lalai."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Selepas penyegerakan penyedia-model, jana semula profil ~/.claude/profiles/<name>/settings.json daripada katalog langsung. Ini tidak pernah mengubah konfigurasi Claude yang aktif atau lalai dan dinyahdayakan secara lalai."
+        "description": "Selepas penyegerakan penyedia-model, jana semula profil ~/.claude/profiles/'<name>'/settings.json daripada katalog langsung. Ini tidak pernah mengubah konfigurasi Claude yang aktif atau lalai dan dinyahdayakan secara lalai."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Nyahdayakan titik akhir pemeriksaan kesihatan tika tempatan."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Setiap segmen = satu kolam percuma · kolam dinyahduplikasi, pengiraan jujur (tiada siling had kadar yang melambung).",
     "boost": "Nyahkunci ~{tokens} lagi/bln dengan tambah nilai OpenRouter $10 sekali sahaja (50 → 1000 perm/hari)",
     "uncapped": "Percuma selama-lamanya, tiada had diterbitkan (had kadar dikenakan) — akses sebenar, tidak dikira dalam tajuk utama:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model} other {# model}} ditandakan sebagai disekat ToS — anda tentukan",
     "provider": "Penyedia",
     "model": "Model",

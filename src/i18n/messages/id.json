@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "RR Sadar Reset",
     "resetAwareDesc": "Menyeimbangkan sisa kuota dengan reset 5 jam dan mingguan, lalu menghitung skor serupa secara round-robin",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusi",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Lebih suka akun termurah yang tersedia",
     "resetAware": "RR Sadar Reset",
     "resetAwareDesc": "Lebih suka akun dengan sisa kuota yang sehat dan hampir disetel ulang",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Batas Lengket",
@@ -12982,7 +12986,7 @@
         "description": "Setelah sinkronisasi model penyedia, buat ulang profil ~/.codex/*.config.toml dari katalog langsung. Ini tidak pernah mengubah konfigurasi Codex yang aktif atau default dan nonaktif secara default."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Setelah sinkronisasi model penyedia, buat ulang profil ~/.claude/profiles/<name>/settings.json dari katalog langsung. Ini tidak pernah mengubah konfigurasi Claude yang aktif atau default dan nonaktif secara default."
+        "description": "Setelah sinkronisasi model penyedia, buat ulang profil ~/.claude/profiles/'<name>'/settings.json dari katalog langsung. Ini tidak pernah mengubah konfigurasi Claude yang aktif atau default dan nonaktif secara default."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Nonaktifkan titik akhir health-check instans lokal."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Setiap segmen = satu pool gratis · deduplikasi pool, penghitungan jujur (tanpa batas rate-limit yang digelembungkan).",
     "boost": "Buka ~{tokens} tambahan/bln dengan top-up OpenRouter $10 satu kali (50 → 1000 req/hari)",
     "uncapped": "Gratis permanen, tanpa batas yang dipublikasikan (dibatasi rate-limit) — akses nyata, tidak dihitung dalam tajuk utama:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model} other {# model}} ditandai sebagai dibatasi ToS — Anda yang menentukan",
     "provider": "Penyedia",
     "model": "Model",

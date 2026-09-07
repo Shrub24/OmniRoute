@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "復位感知RR",
     "resetAwareDesc": "平衡剩餘配額與 5 小時和每週重置，然後對相似分數進行迴圈賽",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "嚴格隨機",
     "strictRandomDesc": "洗牌池模式：每個模型使用一次後再重新洗牌",
     "fusion": "融合",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "優先選擇成本最低的可用帳戶",
     "resetAware": "復位感知RR",
     "resetAwareDesc": "優先選擇剩餘配額正常且重置時間較近的帳戶",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "嚴格隨機",
     "strictRandomDesc": "洗牌池模式：每個帳戶使用一次後再重新洗牌",
     "stickyLimit": "粘性限制",
@@ -12982,7 +12986,7 @@
         "description": "在提供者-模型同步後，從即時目錄重新產生 ~/.codex/*.config.toml 設定檔。這絕不會更改作用中或預設的 Codex 配置，且預設為關閉。"
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "在提供者-模型同步後，從即時目錄重新產生 ~/.claude/profiles/<name>/settings.json 設定檔。這絕不會更改作用中或預設的 Claude 配置，且預設為關閉。"
+        "description": "在提供者-模型同步後，從即時目錄重新產生 ~/.claude/profiles/'<name>'/settings.json 設定檔。這絕不會更改作用中或預設的 Claude 配置，且預設為關閉。"
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "停用本機執行個體的健康檢查端點。"
@@ -13133,6 +13137,7 @@
     "segmentHint": "每個區段 = 一個免費池 · 池間去重、誠實計數（無膨脹的速率限制上限）。",
     "boost": "一次性 $10 OpenRouter 充值即可解鎖約 {tokens}/月（50 → 1000 請求/天）",
     "uncapped": "永久免費，無公佈上限（有速率限制）——真實存取，不計入標題數字：",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model} other {# models}} flagged as ToS-restricted — you decide",
     "provider": "提供者",
     "model": "模型",

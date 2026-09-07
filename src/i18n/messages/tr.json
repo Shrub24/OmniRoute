@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Sıfırlamaya Duyarlı RR",
     "resetAwareDesc": "Kalan kotayı 5 saatlik ve haftalık sıfırlamalara karşı dengeler, ardından benzer puanları bir kez eşleştirme",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Kesin Rastgele",
     "strictRandomDesc": "Karıştırma destesi: yeniden karıştırmadan önce her modeli bir kez kullanır.",
     "fusion": "Füzyon",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Mevcut en uygun maliyetli hesabı tercih edin",
     "resetAware": "Sıfırlamaya Duyarlı RR",
     "resetAwareDesc": "Kalan kotası sağlıklı olan ve sıfırlamaya daha yakın olan hesapları tercih edin",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Katı Rastgele",
     "strictRandomDesc": "Karıştırma destesi — yeniden karıştırmadan önce her hesabı bir kez kullanır",
     "stickyLimit": "Yapışkan Sınır",
@@ -12982,7 +12986,7 @@
         "description": "Sağlayıcı-model senkronizasyonundan sonra, canlı katalogdan ~/.codex/*.config.toml profillerini yeniden oluşturun. Bu işlem aktif veya varsayılan Codex yapılandırmasını asla değiştirmez ve varsayılan olarak kapalıdır."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Sağlayıcı-model senkronizasyonundan sonra, canlı katalogdan ~/.claude/profiles/<name>/settings.json profillerini yeniden oluşturun. Bu işlem aktif veya varsayılan Claude yapılandırmasını asla değiştirmez ve varsayılan olarak kapalıdır."
+        "description": "Sağlayıcı-model senkronizasyonundan sonra, canlı katalogdan ~/.claude/profiles/'<name>'/settings.json profillerini yeniden oluşturun. Bu işlem aktif veya varsayılan Claude yapılandırmasını asla değiştirmez ve varsayılan olarak kapalıdır."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Yerel örnek sağlık kontrolü (health-check) uç noktasını devre dışı bırakın."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Her segment = bir ücretsiz havuz · havuzdan tekilleştirilmiş, dürüst sayım (şişirilmiş istek sınırı tavanları yok).",
     "boost": "Tek seferlik 10 $'lık OpenRouter bakiye yüklemesi ile ayda yaklaşık ~{tokens} daha fazlasının kilidini açın (50 → 1000 istek/gün)",
     "uncapped": "Kalıcı olarak ücretsiz, yayınlanmış bir sınır yok (istek sınırlı) — gerçek erişim, başlıkta sayılmaz:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model} other {# model}} Hizmet Şartları kısıtlamalı olarak işaretlendi — karar sizin",
     "provider": "Sağlayıcı",
     "model": "Model",

@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Балансира оставащата квота спрямо 5 часа и седмично нулиране, след което кръгови робини подобни резултати",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Сливане",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Предпочитайте най-евтиния наличен акаунт",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Предпочитайте акаунти със стабилна оставаща квота и по-близки нулирания",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Лепкава граница",
@@ -12982,7 +12986,7 @@
         "description": "След синхронизиране на доставчик-модел, регенериране на ~/.codex/*.config.toml профили от каталога на живо. Това никога не променя активната или подразбиращата се конфигурация на Codex и е изключено по подразбиране."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/<name>/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
+        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/'<name>'/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Деактивиране на крайната точка за проверка на състоянието на локалния екземпляр."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Всеки сегмент = един безплатен пул · дедупликиран пул, честно отчитане (без изкуствено завишени тавани на лимитите за скорост).",
     "boost": "Отключете още ~{tokens}/месец с еднократно допълване от $10 в OpenRouter (50 → 1000 заявки/ден)",
     "uncapped": "Постоянно безплатно, без публикуван лимит (с ограничение на скоростта) — реален достъп, който не се отчита в заглавието:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# модел е маркиран като ограничен от Условията за ползване — вие решавате} other {# модела са маркирани като ограничени от Условията за ползване — вие решавате}}",
     "provider": "Доставчик",
     "model": "Модел",

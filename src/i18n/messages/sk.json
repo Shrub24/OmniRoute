@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Vyrovnáva zostávajúcu kvótu oproti 5-hodinovým a týždenným resetom a potom sa v každom kole porovnáva s podobnými skóre",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fúzia",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Uprednostnite najlacnejší dostupný účet",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Uprednostňujte účty so zdravou zostávajúcou kvótou a bližšími resetmi",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "Po synchronizácii modelov poskytovateľov pregenerovať profily ~/.codex/*.config.toml zo živého katalógu. Toto nikdy nezmení aktívnu ani predvolenú konfiguráciu Codexu a je to predvolene vypnuté."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Po synchronizácii modelov poskytovateľov pregenerovať profily ~/.claude/profiles/<name>/settings.json zo živého katalógu. Toto nikdy nezmení aktívnu ani predvolenú konfiguráciu Claude a je to predvolene vypnuté."
+        "description": "Po synchronizácii modelov poskytovateľov pregenerovať profily ~/.claude/profiles/'<name>'/settings.json zo živého katalógu. Toto nikdy nezmení aktívnu ani predvolenú konfiguráciu Claude a je to predvolene vypnuté."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Zakázať koncový bod kontroly stavu lokálnej inštancie."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Každý segment = jeden bezplatný pool · deduplikované podľa poolov, poctivé počítanie (žiadne nafúknuté stropy limitov).",
     "boost": "Odomknite o ~{tokens} viac/mes. jednorazovým dobitím 10 $ na OpenRouter (50 → 1000 požiadaviek/deň)",
     "uncapped": "Trvalo zadarmo, bez zverejneného limitu (obmedzená rýchlosť) — skutočný prístup, nezapočítaný v hlavnom prehľade:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model označený ako obmedzený podmienkami ToS} few {# modely označené ako obmedzené podmienkami ToS} other {# modelov označených ako obmedzené podmienkami ToS}} — rozhodnutie je na vás",
     "provider": "Poskytovateľ",
     "model": "Model",

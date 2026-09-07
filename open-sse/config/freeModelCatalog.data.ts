@@ -287,6 +287,14 @@ export const FREE_MODEL_BUDGETS: FreeModelBudget[] = [
   { provider: "mistral", modelId: "mistral-small-latest", displayName: "Mistral Small 4", monthlyTokens: 1000000000, creditTokens: 0, freeType: "recurring-monthly", poolKey: "mistral", tos: "caution" },
   { provider: "mistral", modelId: "devstral-latest", displayName: "Devstral 2", monthlyTokens: 1000000000, creditTokens: 0, freeType: "recurring-monthly", poolKey: "mistral", tos: "caution" },
   { provider: "mistral", modelId: "codestral-latest", displayName: "Codestral", monthlyTokens: 1000000000, creditTokens: 0, freeType: "recurring-monthly", poolKey: "mistral", tos: "caution" },
+  // evidence: public-page https://modelscope.cn/docs/model-service/API-Inference/limits and
+  // https://modelscope.cn/docs/magicube/intro (2026-09-02) — API-Inference is free; calls are paid with
+  // 魔粒: "注册并登录 200 魔粒/日" + "绑定阿里云账号 50 魔粒/日", 1 魔粒 per call on "主流" models ⇒ ~250 calls/day
+  // ⇒ 250 × 800 × 30 = 6M/month, one balance per account (single pool).
+  // eligibilityGate: "账号注册后需绑定阿里云账号，并且通过实名认证后才可使用" (Alibaba Cloud binding + mainland
+  // real-name verification). The docs also call the product "非商业化，非盈利" — hence tos: caution.
+  { provider: "modelscope", modelId: "Qwen/Qwen3.5-397B-A17B", displayName: "Qwen3.5 397B A17B (ModelScope)", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "modelscope-free", tos: "caution", eligibilityGate: "regional-identity" },
+  { provider: "modelscope", modelId: "deepseek-ai/DeepSeek-V4-Pro", displayName: "DeepSeek V4 Pro (ModelScope)", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "modelscope-free", tos: "caution", eligibilityGate: "regional-identity" },
   { provider: "monsterapi", modelId: "llama-3-8b-fuse", displayName: "Llama 3 8B Fuse", monthlyTokens: 0, creditTokens: 0, freeType: "one-time-initial", poolKey: "monsterapi", tos: "ambiguous" },
   { provider: "morph", modelId: "morph-v3-large", displayName: "morph-v3-large", monthlyTokens: 400000, creditTokens: 0, freeType: "recurring-monthly", poolKey: "morph", tos: "ok" },
   { provider: "morph", modelId: "morph-v3-fast", displayName: "morph-v3-fast", monthlyTokens: 400000, creditTokens: 0, freeType: "recurring-monthly", poolKey: "morph", tos: "ok" },

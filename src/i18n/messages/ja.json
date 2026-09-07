@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "リセット対応 RR",
     "resetAwareDesc": "残りの割り当てと 5 時間および毎週のリセットのバランスをとり、同様のスコアをラウンドロビンします。",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "フュージョン",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "利用可能な最も安いアカウントを優先する",
     "resetAware": "リセット対応 RR",
     "resetAwareDesc": "残りのクォータが健全でリセットに近いアカウントを優先する",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "スティッキー制限",
@@ -12982,7 +12986,7 @@
         "description": "After provider-model synchronization, regenerate ~/.codex/*.config.toml profiles from the live catalog. This never changes the active or default Codex configuration and is off by default."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/<name>/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
+        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/'<name>'/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Disable the local instance health-check endpoint."
@@ -13133,6 +13137,7 @@
     "segmentHint": "各セグメント = 1つの無料プール · プール重複排除、誠実なカウント（誇張されたレート制限上限なし）。",
     "boost": "1回限りの$10のOpenRouterチャージで、月あたりさらに約{tokens}をアンロック（50 → 1000 リクエスト/日）",
     "uncapped": "恒久的に無料、公開された上限なし（レート制限あり） — 見出しにはカウントされない、実際のアクセス：",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# 個のモデル} other {# 個のモデル}}が利用規約制限としてフラグ立てされています — ご自身で判断してください",
     "provider": "プロバイダー",
     "model": "モデル",

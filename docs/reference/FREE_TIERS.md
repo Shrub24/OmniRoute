@@ -1,7 +1,7 @@
 ---
 title: "Free Tiers & Free-Token Budget"
 version: 3.8.50
-lastUpdated: 2026-09-02
+lastUpdated: 2026-09-03
 ---
 
 # Free Tiers & Free-Token Budget
@@ -19,6 +19,7 @@ lastUpdated: 2026-09-02
 | **+ first month with signup credits**       | **~2.10B**        | Steady + one-time signup credits (Together $25, Z.AI 20M, DeepSeek 5M, …), deduped per account. **First month only** — does not recur.                                                                                                                                           |
 | **+ permanently free, no published cap**    | _un-quantifiable_ | `siliconflow`, `glm-cn` (GLM-4-Flash), `tencent`, `baidu`, `kilo-gateway`, `opencode-zen`, `gemini`, `ollama-cloud` — real recurring access, rate/concurrency-limited, **no token cap to count**. Listed, never summed (counting them at `RPM×24/7` is the inflation we reject). |
 | **+ deposit-unlock boost**                  | **+~24M**         | A one-time **$10** OpenRouter top-up raises its free pool from 50 → 1000 req/day. Reported separately so it never inflates the steady number.                                                                                                                                    |
+| **+ behind a regional identity check**      | **+~6M**          | `modelscope` (Alibaba Cloud binding + mainland-China real-name verification). Real recurring quota, exposed as `gatedRecurringTokens` / `gatedProviders` and on the dashboard. Never summed into the headline: +~6M behind regional identity verification.                       |
 | Theoretical ceiling (all rate limits, 24/7) | ~10B              | Sum of every provider rate limit extrapolated to non-stop use. **Not a guarantee** — do not headline this.                                                                                                                                                                       |
 
 **Honest headline:** _OmniRoute aggregates **~1.47B documented free tokens per month** (up to ~2.10B in your first month with signup credits) across 34 free-tier pools — plus a long tail of permanently-free, no-cap providers — and RTK + Caveman compression (15–95% token savings) stretches that further._
@@ -78,7 +79,20 @@ purpose.
 - Daily token cap → `monthly = daily × 30`. Only RPD documented → `RPD × ~800 output tokens × 30`. Only RPM/TPM (no daily cap) → **uncapped** (see below).
 - **Permanently free, but no published token cap** (`siliconflow`, `glm-cn`, `tencent`, `baidu`, `kilo-gateway`, `opencode-zen`, `gemini`, `ollama-cloud`): these are real recurring free access, rate/concurrency-limited. We classify them `recurring-uncapped` and **never sum them** — multiplying `RPM × 24/7 × 30d` would produce a fantasy ceiling (the inflation we reject). They are listed so you know they exist.
 - **Deposit-unlock boost:** a one-time small top-up that permanently raises a free quota (OpenRouter: $10 → 1000 req/day ≈ +24M/mo). Reported as a separate figure, kept out of the steady headline.
+- **Eligibility-gated quotas** (`eligibilityGate: "regional-identity"`): a real recurring quota that only opens after a region-bound identity check (mainland-China real-name verification today). Counted with the same pool-dedupe rule into a separate figure (`gatedRecurringTokens`), never into the steady headline. The regime (`freeType`) is unchanged, so routing is unchanged.
 - **Evidence classes.** The rule: a number in the catalog cites its source in an `// evidence:` comment next to the entry — `public-page` (a provider page anyone can read), `api-public` (an unauthenticated endpoint of the provider, e.g. NaraRouter's public plans endpoint at router.bynara.id), or `console-verified <date> por <who>` (the figure is only visible inside an account console; the comment records who saw it and when, and the public page that says the cap exists). The state today: the five blocks re-audited on 2026-09-02 carry it (`gemini`, `groq`, `mistral`, `ollama-cloud`, `nara`); entries that predate the 2026-09-02 re-audit inherit the earlier research until they are touched; any **new or changed** number without an evidence comment is a bug. Today only `mistral` is console-verified.
+
+---
+
+## Why our number is smaller than other aggregators'
+
+Most "free tokens per month" figures in this space are sums of per-model labels. Ours is not, on purpose:
+
+- **Each shared pool is counted once.** Mistral's free plan is one 1B/month allowance per organization; listing it under five models does not make it 5B. Summed per model, our own catalog would read **~7.4B** (recomputed on 2026-09-03; this figure is not CI-gated — re-measure it whenever the catalog changes) — the headline says **~1.47B** because that is what one account of each provider can actually spend.
+- **Daily caps are converted, rates are not.** A documented tokens/day cap becomes `× 30`; a documented requests/day cap becomes `RPD × ~800 tokens × 30`; a provider that only publishes requests-per-minute has **no** monthly figure and is listed as _uncapped_, never summed. Multiplying a rate limit by 24/7 is the inflation we refuse.
+- **Quotas behind a regional identity check are shown apart** (`+~6M behind regional identity verification`), because most readers cannot use them.
+- **Signup credits are first-month only** and reported as a second figure, never blended into the steady number.
+- **The figure is enforced by CI.** `npm run check:docs-counts` recomputes the totals from the catalog and fails the build when this file, the README or the budget card drift from them.
 
 ---
 

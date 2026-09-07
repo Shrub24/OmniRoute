@@ -66,22 +66,33 @@ export function resolvePreviousResponseState(
   const db = getDbInstance();
   const row = db
     .prepare(
-      `SELECT artifact_relpath, api_key_id FROM call_logs
+      `SELECT artifact_relpath, api_key_id, video_content_removed FROM call_logs
        WHERE response_id = ? AND detail_state = 'ready'
        ORDER BY timestamp DESC LIMIT 1`
     )
-    .get(responseId) as { artifact_relpath: string | null; api_key_id: string | null } | undefined;
+    .get(responseId) as
+    | { artifact_relpath: string | null; api_key_id: string | null; video_content_removed: number }
+    | undefined;
 
   if (!row || !row.artifact_relpath) return null;
   // Tenant isolation: a response id is only ever handed back to the API key
   // that created it. A stored row with no api_key_id at all (no-log/legacy)
   // can never be resolved by any key -- fail closed rather than guess.
   if (!apiKeyId || row.api_key_id !== apiKeyId) return null;
+  // #12150 P2 surface 2: the persisted clientRawRequest snapshot on this row had
+  // its video transcript cues structurally redacted to [redacted-video-transcript]
+  // before storage (videoBridgeSnapshotRedaction, marker written by the call-log
+  // path). The stored input therefore no longer carries the client's real cue
+  // text -- reconstructing a continuation off it would forward the placeholder
+  // upstream as if it were genuine history. Fail closed so the client resends
+  // full history, exactly like a real previous_response_not_found.
+  if (row.video_content_removed === 1) return null;
 
   const { artifact, state } = readCallArtifact(row.artifact_relpath);
   if (state !== "ready" || !artifact?.pipeline) return null;
 
-  const clientRawRequest = artifact.pipeline.clientRawRequest as { body?: unknown } | undefined;
+  const clientRawRequest = artifact.pipeline.clientRawRequest as
+    { body?: unknown; effectiveInput?: unknown } | undefined;
   const clientResponse = artifact.pipeline.clientResponse as
     { output?: unknown; summary?: { output?: unknown } } | undefined;
 
@@ -94,7 +105,22 @@ export function resolvePreviousResponseState(
   // unconditionally unresolvable for every translate-mode/auto-routed
   // connection (previous_response_not_found on every attempt, regardless of
   // whether the id was real and the artifact was otherwise 'ready').
-  const input = isPlainRecord(clientRawRequest?.body) ? clientRawRequest.body.input : undefined;
+  //
+  // effectiveInput first, body.input as a compat fallback for artifacts
+  // logged before this field existed: `body` is captureDeferredClientRawBody's
+  // deliberately pre-reconstruction snapshot of the raw client bytes. For a
+  // turn that was ITSELF a continuation, that's just the client's own trimmed
+  // delta, not the full input that actually dispatched -- chaining off it
+  // compounds into a progressively truncated reconstruction a few hops deep
+  // (live incident 2026-09-03: a malformed request with no leading
+  // system/user message, rejected by the upstream provider). effectiveInput
+  // is captured AFTER reconstruction runs (chat.ts) and is what this function
+  // must chain off so a multi-hop continuation stays accurate.
+  const input = Array.isArray(clientRawRequest?.effectiveInput)
+    ? clientRawRequest.effectiveInput
+    : isPlainRecord(clientRawRequest?.body)
+      ? clientRawRequest.body.input
+      : undefined;
   // A streaming clientResponse is clientPayloadCollector.build()'s output, which
   // always nests the caller's summary under `.summary` (see
   // createStructuredSSECollector in streamPayloadCollector.ts) -- a non-streaming

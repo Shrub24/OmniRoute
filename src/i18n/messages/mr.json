@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "रीसेट-अवेअर RR",
     "resetAwareDesc": "शिल्लक कोटा 5h आणि साप्ताहिक रीसेट करा, नंतर समान स्कोअर राउंड-रॉबिन",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "फ्युजन",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Prefer cheapest available account",
     "resetAware": "रीसेट-अवेअर RR",
     "resetAwareDesc": "निरोगी उर्वरित कोटा आणि जवळच्या रीसेटसह खात्यांना प्राधान्य द्या",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "प्रदाता-मॉडेल सिंक्रोनाइझेशननंतर, लाइव्ह कॅटलॉगमधून ~/.codex/*.config.toml प्रोफाइल्स पुन्हा तयार करा. हे सक्रिय किंवा डीफॉल्ट Codex कॉन्फिगरेशन कधीही बदलत नाही आणि डीफॉल्टनुसार बंद असते."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "प्रदाता-मॉडेल सिंक्रोनाइझेशननंतर, लाइव्ह कॅटलॉगमधून ~/.claude/profiles/<name>/settings.json प्रोफाइल्स पुन्हा तयार करा. हे सक्रिय किंवा डीफॉल्ट Claude कॉन्फिगरेशन कधीही बदलत नाही आणि डीफॉल्टनुसार बंद असते."
+        "description": "प्रदाता-मॉडेल सिंक्रोनाइझेशननंतर, लाइव्ह कॅटलॉगमधून ~/.claude/profiles/'<name>'/settings.json प्रोफाइल्स पुन्हा तयार करा. हे सक्रिय किंवा डीफॉल्ट Claude कॉन्फिगरेशन कधीही बदलत नाही आणि डीफॉल्टनुसार बंद असते."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "स्थानिक इन्स्टन्स हेल्थ-चेक एंडपॉइंट अक्षम करा."
@@ -13133,6 +13137,7 @@
     "segmentHint": "प्रत्येक विभाग = एक मोफत पूल · पूल-डिड्युप केलेले, प्रामाणिक मोजणी (कोणतीही फुगवलेली रेट-लिमिट कमाल मर्यादा नाही).",
     "boost": "एकवेळच्या $10 OpenRouter टॉप-अपसह आणखी ~{tokens}/महिना अनलॉक करा (50 → 1000 req/day)",
     "uncapped": "कायमस्वरूपी मोफत, कोणतीही प्रकाशित मर्यादा नाही (रेट-लिमिटेड) — खरा ॲक्सेस, हेडलाइनमध्ये मोजला जात नाही:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# मॉडेल} other {# मॉडेल्स}} ToS-प्रतिबंधित म्हणून चिन्हांकित — तुम्ही ठरवा",
     "provider": "प्रदाता",
     "model": "मॉडेल",

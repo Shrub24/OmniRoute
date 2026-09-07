@@ -106,16 +106,20 @@ test("the gate exits 0 against the current (synced) repo state", () => {
 // down to 1.37B, because no gate watched that number.
 import {
   checkFreeTierHeadline,
+  extractGatedClaims,
   extractHeadlineClaims,
 } from "../../scripts/check/check-docs-counts-sync.mjs";
 
 const checkHeadline = checkFreeTierHeadline as (
   content: string,
-  totals: { s: number; m: number; p: number }
+  totals: { s: number; m: number; p: number; g?: number }
 ) => { ok: boolean; detail: string };
 const extractClaims = extractHeadlineClaims as (
   content: string
 ) => { value: number; text: string }[];
+const extractGated = extractGatedClaims as (
+  content: string
+) => { tokens: number; unit: "B" | "M"; text: string }[];
 
 const TOTALS = { s: 1_371_725_000, m: 1_998_225_000, p: 39 };
 
@@ -145,6 +149,45 @@ test("free-tier gate ignores non-headline figures", () => {
 
 test("free-tier gate passes when a file carries no headline at all", () => {
   assert.equal(checkHeadline("no figures here", TOTALS).ok, true);
+});
+
+// --- Eligibility-gated bucket ("+~6M behind regional identity verification") --
+// The gated figure sits next to the headline and is validated with its own anchor,
+// so it can neither drift nor be silently dropped once the catalog reports one.
+const TOTALS_G = { s: 1_503_225_000, m: 2_129_725_000, p: 35, g: 6_000_000 };
+
+test("free-tier gate validates the gated figure that sits next to the headline", () => {
+  const ok =
+    "~1.5B free tokens per month … +~6M behind regional identity verification (ModelScope)";
+  assert.equal(checkHeadline(ok, TOTALS_G).ok, true);
+  const stale = "~1.5B free tokens per month … +~60M behind regional identity verification";
+  assert.equal(checkHeadline(stale, TOTALS_G).ok, false);
+  assert.match(checkHeadline(stale, TOTALS_G).detail, /gated/);
+});
+
+test("free-tier gate rejects a file that carries the headline but omits the gated line", () => {
+  assert.equal(checkHeadline("~1.5B free tokens per month", TOTALS_G).ok, false);
+  // a file with no headline at all is still fine (per-provider tables, changelogs)
+  assert.equal(checkHeadline("no figures here", TOTALS_G).ok, true);
+  // and nothing changes for callers that pass no gated total
+  assert.equal(
+    checkHeadline("~1.5B free tokens per month", { s: TOTALS_G.s, m: TOTALS_G.m, p: 35 }).ok,
+    true
+  );
+});
+
+test("gated claims are read in M or B and need the anchor phrase", () => {
+  assert.deepEqual(extractGated("~6M of unrelated text"), []);
+  assert.deepEqual(extractGated("+~6M behind regional identity verification"), [
+    { tokens: 6_000_000, unit: "M", text: "+~6M" },
+  ]);
+  assert.equal(
+    checkHeadline("~1.5B free tokens per month · ~1.2B behind regional identity verification", {
+      ...TOTALS_G,
+      g: 1_230_000_000,
+    }).ok,
+    true
+  );
 });
 
 // --- Generic numeric-claim gate (engines / MCP tools / scopes / CLI) --------

@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "I-reset-Aware RR",
     "resetAwareDesc": "Binabalanse ang natitirang quota laban sa 5h at lingguhang pag-reset, pagkatapos ay round-robins ang mga katulad na marka",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusion",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Mas gusto ang pinakamurang available na account",
     "resetAware": "I-reset-Aware RR",
     "resetAwareDesc": "Mas gusto ang mga account na may malusog na natitirang quota at mas malapit na pag-reset",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Malagkit na Limitasyon",
@@ -12982,7 +12986,7 @@
         "description": "Pagkatapos ng pag-synchronize ng provider-model, muling buuin ang mga profile ng ~/.codex/*.config.toml mula sa live catalog. Hindi nito kailanman binabago ang aktibo o default na configuration ng Codex at naka-off bilang default."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Pagkatapos ng pag-synchronize ng provider-model, muling buuin ang mga profile ng ~/.claude/profiles/<name>/settings.json mula sa live catalog. Hindi nito kailanman binabago ang aktibo o default na configuration ng Claude at naka-off bilang default."
+        "description": "Pagkatapos ng pag-synchronize ng provider-model, muling buuin ang mga profile ng ~/.claude/profiles/'<name>'/settings.json mula sa live catalog. Hindi nito kailanman binabago ang aktibo o default na configuration ng Claude at naka-off bilang default."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "I-disable ang health-check endpoint ng lokal na instance."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Bawat segment = isang libreng pool · pool-deduped, tapat na pagbibilang (walang pinalobong mga ceiling ng rate-limit).",
     "boost": "I-unlock ang ~{tokens} pa/buwan gamit ang isang beses na $10 OpenRouter top-up (50 → 1000 req/araw)",
     "uncapped": "Permanenteng libre, walang nai-publish na limitasyon (rate-limited) — totoong access, hindi binibilang sa headline:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# modelo} other {# na modelo}} ang na-flag bilang ToS-restricted — ikaw ang magpasya",
     "provider": "Provider",
     "model": "Modelo",

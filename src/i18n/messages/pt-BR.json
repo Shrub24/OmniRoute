@@ -3262,6 +3262,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "RR com reconhecimento de redefinição",
     "resetAwareDesc": "Equilibra a cota restante com redefinições de 5h e semanais e, em seguida, faz um round-robin de pontuações semelhantes",
+    "quotaWeighted": "Ponderado por cota",
+    "quotaWeightedDesc": "Ignora contas esgotadas e escolhe entre as restantes na proporção da cota restante com reconhecimento de reset.",
     "strictRandom": "Aleatório Estrito",
     "strictRandomDesc": "Baralho embaralhado — usa cada modelo uma vez antes de reembaralhar",
     "fusion": "Fusão",
@@ -7062,6 +7064,8 @@
     "costOptDesc": "Preferir conta mais barata disponível",
     "resetAware": "RR com reconhecimento de redefinição",
     "resetAwareDesc": "Prefira contas com cota restante saudável e redefinições mais próximas",
+    "quotaWeighted": "Ponderado por cota",
+    "quotaWeightedDesc": "Ignora contas esgotadas e escolhe entre as restantes na proporção da cota restante com reconhecimento de reset.",
     "strictRandom": "Aleatório Estrito",
     "strictRandomDesc": "Baralho embaralhado — usa cada conta uma vez antes de reembaralhar",
     "stickyLimit": "Limite Fixo",
@@ -12993,7 +12997,7 @@
         "description": "Após a sincronização de modelos do provedor, regenera os perfis ~/.codex/*.config.toml a partir do catálogo ativo. Isso nunca altera a configuração ativa ou padrão do Codex e está desativado por padrão."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Após a sincronização de modelos do provedor, regenera os perfis ~/.claude/profiles/<name>/settings.json a partir do catálogo ativo. Isso nunca altera a configuração ativa ou padrão do Claude e está desativado por padrão."
+        "description": "Após a sincronização de modelos do provedor, regenera os perfis ~/.claude/profiles/'<name>'/settings.json a partir do catálogo ativo. Isso nunca altera a configuração ativa ou padrão do Claude e está desativado por padrão."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Desativa o endpoint de verificação de saúde da instância local."
@@ -13003,6 +13007,10 @@
       },
       "SKILLS_SANDBOX_NETWORK_ENABLED": {
         "description": "Ativa o acesso à rede no sandbox de skills."
+      },
+      "SERVER_OWNED_TOOL_LOOP_ENABLED": {
+        "label": "Server-Owned Tool Loop",
+        "description": "Continue chamadas de ferramentas do servidor (server-owned) em não-streaming até que o modelo retorne uma resposta utilizável pelo cliente."
       }
     }
   },
@@ -13144,6 +13152,7 @@
     "segmentHint": "Cada segmento = um pool gratuito · deduplicado por pool, contagem honesta (sem tetos de limite de taxa inflados).",
     "boost": "Desbloqueie ~{tokens} a mais/mês com uma recarga única de $10 na OpenRouter (50 → 1000 solicitações/dia)",
     "uncapped": "Permanentemente gratuito, sem teto publicado (limitado por taxa) — acesso real, não contabilizado no total principal:",
+    "gated": "~{tokens}/mês a mais atrás de verificação de identidade regional (ex.: real-name da China continental) — quota real, fora do headline:",
     "tosRestricted": "{count, plural, one {# modelo} other {# modelos}} sinalizado(s) como restrito(s) pelos Termos de Serviço — você decide",
     "provider": "Provedor",
     "model": "Modelo",

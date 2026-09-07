@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Weka Upya-Aware RR",
     "resetAwareDesc": "Husawazisha mgawo uliosalia dhidi ya saa 5 na uwekaji upya wa kila wiki, kisha uwekaji alama sawa",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusion",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Prefer cheapest available account",
     "resetAware": "Weka Upya-Aware RR",
     "resetAwareDesc": "Pendelea akaunti zilizo na kiasi kilichosalia cha afya na uwekaji upya wa karibu zaidi",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "Baada ya ulandanishi wa mtoa huduma na mfano, zalisha upya wasifu wa ~/.codex/*.config.toml kutoka kwenye katalogi hai. Hii haibadilishi kamwe usanidi amilifu au wa chaguomsingi wa Codex na imezimwa kwa chaguomsingi."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/<name>/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
+        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/'<name>'/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Zima kituo cha mwisho cha ukaguzi wa afya wa mfano wa ndani."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Kila sehemu = pool moja ya bure · pool isiyo na marudio, hesabu ya uaminifu (hakuna dari zilizoongezwa za kikomo cha kasi).",
     "boost": "Fungua takriban ~{tokens} zaidi/mwezi kwa kuongeza salio la mara moja la $10 la OpenRouter (maombi 50 → 1000/siku)",
     "uncapped": "Bure kabisa, hakuna kikomo kilichochapishwa (kasi imedhibitiwa) — ufikiaji halisi, haujahesabiwa kwenye kichwa cha habari:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# mfano} other {# mifano}} imewekewa alama kama iliyozuiliwa na ToS — unaamua",
     "provider": "Mtoa huduma",
     "model": "Mfano",

@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Запись с учетом сброса",
     "resetAwareDesc": "Балансирует оставшуюся квоту с 5-часовым и еженедельным сбросом, затем выполняет циклический анализ одинаковых результатов.",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Строгий случайный",
     "strictRandomDesc": "Перемешивание колоды - каждая модель используется по одному разу перед новым перемешиванием",
     "fusion": "Слияние",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Предпочитаю самый дешевый доступный аккаунт",
     "resetAware": "Запись с учетом сброса",
     "resetAwareDesc": "Предпочитайте учетные записи со здоровой оставшейся квотой и более близким к сбросу.",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Строгий случайный",
     "strictRandomDesc": "Перемешивание колоды — каждый аккаунт используется один раз перед повторным перемешиванием",
     "stickyLimit": "Липкий лимит",
@@ -12982,7 +12986,7 @@
         "description": "After provider-model synchronization, regenerate ~/.codex/*.config.toml profiles from the live catalog. This never changes the active or default Codex configuration and is off by default."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/<name>/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
+        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/'<name>'/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Disable the local instance health-check endpoint."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Каждый сегмент = один бесплатный пул · дедупликация пулов, честный подсчет (без завышенных лимитов частоты запросов).",
     "boost": "Разблокируйте еще ~{tokens}/мес. с помощью разового пополнения OpenRouter на $10 (50 → 1000 запр./день)",
     "uncapped": "Навсегда бесплатно, без опубликованного лимита (с ограничением частоты) — реальный доступ, не учитывается в заголовке:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# модель помечена как ограниченная Условиями использования} few {# модели помечены как ограниченные Условиями использования} many {# моделей помечено как ограниченные Условиями использования} other {# моделей помечено как ограниченные Условиями использования}} — решать вам",
     "provider": "Провайдер",
     "model": "Модель",

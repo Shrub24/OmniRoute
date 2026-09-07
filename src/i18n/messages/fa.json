@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "سهمیه باقیمانده را در برابر 5 ساعت و بازنشانی های هفتگی متعادل می کند، سپس امتیازات مشابه را به صورت دور برگشتی به دست می آورد.",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "تلفیق",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Prefer cheapest available account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "حساب‌های دارای سهمیه باقی‌مانده سالم و بازنشانی‌های نزدیک‌تر را ترجیح دهید",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "پس از همگام‌سازی ارائه‌دهنده-مدل، پروفایل‌های ~/.codex/*.config.toml را از کاتالوگ زنده بازسازی کنید. این کار هرگز پیکربندی فعال یا پیش‌فرض Codex را تغییر نمی‌دهد و به طور پیش‌فرض غیرفعال است."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "پس از همگام‌سازی ارائه‌دهنده-مدل، پروفایل‌های ~/.claude/profiles/<name>/settings.json را از کاتالوگ زنده بازسازی کنید. این کار هرگز پیکربندی فعال یا پیش‌فرض Claude را تغییر نمی‌دهد و به طور پیش‌فرض غیرفعال است."
+        "description": "پس از همگام‌سازی ارائه‌دهنده-مدل، پروفایل‌های ~/.claude/profiles/'<name>'/settings.json را از کاتالوگ زنده بازسازی کنید. این کار هرگز پیکربندی فعال یا پیش‌فرض Claude را تغییر نمی‌دهد و به طور پیش‌فرض غیرفعال است."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "غیرفعال کردن نقطه پایانی بررسی سلامت نمونه محلی."
@@ -13133,6 +13137,7 @@
     "segmentHint": "هر بخش = یک استخر رایگان · حذف تکرار استخر، شمارش واقعی (بدون سقف‌های محدودیت نرخ کاذب).",
     "boost": "با یک‌بار شارژ ۱۰ دلاری OpenRouter، حدود ~{tokens} بیشتر در ماه آزاد کنید (۵۰ → ۱۰۰۰ درخواست/روز)",
     "uncapped": "دائماً رایگان، بدون سقف اعلام‌شده (دارای محدودیت نرخ) — دسترسی واقعی، بدون احتساب در عنوان اصلی:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# مدل} other {# مدل}} دارای محدودیت ToS علامت‌گذاری شده‌اند — تصمیم با شماست",
     "provider": "ارائه‌دهنده",
     "model": "مدل",

@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Kiegyenlíti a fennmaradó kvótát az 5 órával és a heti visszaállításokkal szemben, majd hasonló pontszámokat hajt végre",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fúzió",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "A legolcsóbb elérhető fiók előnyben részesítése",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Előnyben részesítse az egészséges fennmaradó kvótával és közelebbi visszaállításokkal rendelkező fiókokat",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Ragadós határ",
@@ -12982,7 +12986,7 @@
         "description": "A szolgáltató-modell szinkronizálás után a ~/.codex/*.config.toml profilok újragenerálása az élő katalógusból. Ez soha nem változtatja meg az aktív vagy alapértelmezett Codex konfigurációt, és alapértelmezés szerint ki van kapcsolva."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "A szolgáltató-modell szinkronizálás után a ~/.claude/profiles/<name>/settings.json profilok újragenerálása az élő katalógusból. Ez soha nem változtatja meg az aktív vagy alapértelmezett Claude konfigurációt, és alapértelmezés szerint ki van kapcsolva."
+        "description": "A szolgáltató-modell szinkronizálás után a ~/.claude/profiles/'<name>'/settings.json profilok újragenerálása az élő katalógusból. Ez soha nem változtatja meg az aktív vagy alapértelmezett Claude konfigurációt, és alapértelmezés szerint ki van kapcsolva."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "A helyi példány állapotellenőrző végpontjának letiltása."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Each segment = one free pool · pool-deduped, honest counting (no inflated rate-limit ceilings).",
     "boost": "Oldjon fel további ~{tokens}/hó-t egy egyszeri 10 dolláros OpenRouter feltöltéssel (50 → 1000 req/day)",
     "uncapped": "Tartósan ingyenes, nincs közzétett korlát (sebességkorlátozott) — valós hozzáférés, nem számít bele a főcímbe:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# modell} other {# modell}} ÁSZF-korlátozottként megjelölve — Ön dönt",
     "provider": "Provider",
     "model": "Model",

@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Balanserer gjenværende kvote mot 5 timer og ukentlige tilbakestillinger, og runder deretter lignende resultater",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusjon",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Foretrekker den billigste tilgjengelige kontoen",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Foretrekk kontoer med sunn gjenværende kvote og nærmere tilbakestillinger",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "Etter synkronisering av leverandørmodell, regenerer ~/.codex/*.config.toml-profiler fra den aktive katalogen. Dette endrer aldri den aktive eller standard Codex-konfigurasjonen og er av som standard."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Etter synkronisering av leverandørmodell, regenerer ~/.claude/profiles/<name>/settings.json-profiler fra den aktive katalogen. Dette endrer aldri den aktive eller standard Claude-konfigurasjonen og er av som standard."
+        "description": "Etter synkronisering av leverandørmodell, regenerer ~/.claude/profiles/'<name>'/settings.json-profiler fra den aktive katalogen. Dette endrer aldri den aktive eller standard Claude-konfigurasjonen og er av som standard."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Deaktiver helsesjekk-endepunktet for den lokale instansen."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Hvert segment = én gratis pool · pool-deduplisert, ærlig telling (ingen oppblåste tak for hastighetsbegrensning).",
     "boost": "Lås opp ~{tokens} mer/mnd med en engangs $10 OpenRouter-påfylling (50 → 1000 forespørsler/dag)",
     "uncapped": "Permanent gratis, ingen publisert grense (hastighetsbegrenset) — reell tilgang, ikke talt med i overskriften:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# modell} other {# modeller}} flagget som ToS-begrenset — du bestemmer",
     "provider": "Leverandør",
     "model": "Modell",

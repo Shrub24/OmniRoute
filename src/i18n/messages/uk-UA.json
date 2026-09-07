@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Балансує квоту, що залишилася, із 5-годинним і щотижневим скиданням, а потім циклічними роботами з подібними результатами",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Злиття",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Віддайте перевагу найдешевшому доступному обліковому запису",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Віддавайте перевагу обліковим записам із достатньою квотою, що залишилася, і найближчими скиданнями",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "Після синхронізації моделей провайдерів повторно генерувати профілі ~/.codex/*.config.toml з актуального каталогу. Це ніколи не змінює активну або стандартну конфігурацію Codex і вимкнено за замовчуванням."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Після синхронізації моделей провайдерів повторно генерувати профілі ~/.claude/profiles/<name>/settings.json з актуального каталогу. Це ніколи не змінює активну або стандартну конфігурацію Claude і вимкнено за замовчуванням."
+        "description": "Після синхронізації моделей провайдерів повторно генерувати профілі ~/.claude/profiles/'<name>'/settings.json з актуального каталогу. Це ніколи не змінює активну або стандартну конфігурацію Claude і вимкнено за замовчуванням."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Вимкнути кінцеву точку перевірки працездатності локального екземпляра."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Кожен сегмент = один безкоштовний пул · дедуплікований пул, чесний підрахунок (без завищених лімітів частоти запитів).",
     "boost": "Розблокуйте ще ~{tokens}/міс за допомогою одноразового поповнення OpenRouter на $10 (50 → 1000 зап./день)",
     "uncapped": "Постійно безкоштовно, без опублікованого ліміту (з обмеженням частоти) — реальний доступ, не враховується в заголовку:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# модель позначена як обмежена ToS — рішення за вами} few {# моделі позначені як обмежені ToS — рішення за вами} many {# моделей позначено як обмежені ToS — рішення за вами} other {# моделі позначено як обмежені ToS — рішення за вами}}",
     "provider": "Провайдер",
     "model": "Модель",

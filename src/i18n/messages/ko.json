@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "재설정 인식 RR",
     "resetAwareDesc": "5시간 및 주간 재설정을 기준으로 남은 할당량의 균형을 맞추고 비슷한 점수를 라운드 로빈 방식으로 진행합니다.",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "퓨전",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "가장 저렴한 계정을 선호합니다",
     "resetAware": "재설정 인식 RR",
     "resetAwareDesc": "남은 할당량이 양호하고 재설정이 가까운 계정을 선호합니다.",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "고정 한도",
@@ -12982,7 +12986,7 @@
         "description": "공급자-모델 동기화 후 라이브 카탈로그에서 ~/.codex/*.config.toml 프로필을 재생성합니다. 이는 활성 또는 기본 Codex 구성을 변경하지 않으며 기본적으로 꺼져 있습니다."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "공급자-모델 동기화 후 라이브 카탈로그에서 ~/.claude/profiles/<name>/settings.json 프로필을 재생성합니다. 이는 활성 또는 기본 Claude 구성을 변경하지 않으며 기본적으로 꺼져 있습니다."
+        "description": "공급자-모델 동기화 후 라이브 카탈로그에서 ~/.claude/profiles/'<name>'/settings.json 프로필을 재생성합니다. 이는 활성 또는 기본 Claude 구성을 변경하지 않으며 기본적으로 꺼져 있습니다."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "로컬 인스턴스 상태 확인 엔드포인트를 비활성화합니다."
@@ -13133,6 +13137,7 @@
     "segmentHint": "각 세그먼트 = 하나의 무료 풀 · 풀 중복 제거, 정직한 집계 (부풀려진 요율 제한 한도 없음).",
     "boost": "일회성 $10 OpenRouter 충전으로 월 약 {tokens}개 추가 잠금 해제 (일일 50 → 1000회 요청)",
     "uncapped": "영구 무료, 공개된 제한 없음 (요율 제한됨) — 헤드라인에 집계되지 않는 실제 액세스:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {#개 모델} other {#개 모델}}이 이용약관(ToS) 제한으로 표시됨 — 귀하가 결정하세요",
     "provider": "제공업체",
     "model": "모델",

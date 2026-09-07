@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "توزيع دوري مراعي لإعادة التعيين",
     "resetAwareDesc": "يوازن الحصة المتبقية بين نافذتي إعادة التعيين لخمس ساعات ولأسبوع، ثم يناوب بين النتائج المتقاربة",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "عشوائي صارم",
     "strictRandomDesc": "يخلط الترتيب ويستخدم كل نموذج مرة واحدة قبل إعادة الخلط",
     "fusion": "الدمج",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "تفضيل أرخص حساب متاح",
     "resetAware": "تناوب دوري واعٍ بإعادة الضبط",
     "resetAwareDesc": "تفضيل الحسابات ذات الحصة السليمة المتبقية وأقرب وقت لإعادة الضبط",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "عشوائي صارم",
     "strictRandomDesc": "يخلط المجموعة ويستخدم كل حساب مرة قبل إعادة الخلط",
     "stickyLimit": "حد الرسائل المثبتة",
@@ -12982,7 +12986,7 @@
         "description": "بعد مزامنة المزود والنموذج، أعد إنشاء ملفات التعريف ~/.codex/*.config.toml من الكتالوج المباشر. لا يغير هذا أبداً تكوين Codex النشط أو الافتراضي ويكون معطلاً بشكل افتراضي."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "بعد مزامنة المزود والنموذج، أعد إنشاء ملفات التعريف ~/.claude/profiles/<name>/settings.json من الكتالوج المباشر. لا يغير هذا أبداً تكوين Claude النشط أو الافتراضي ويكون معطلاً بشكل افتراضي."
+        "description": "بعد مزامنة المزود والنموذج، أعد إنشاء ملفات التعريف ~/.claude/profiles/'<name>'/settings.json من الكتالوج المباشر. لا يغير هذا أبداً تكوين Claude النشط أو الافتراضي ويكون معطلاً بشكل افتراضي."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "تعطيل نقطة نهاية فحص صحة المثيل المحلي."
@@ -13133,6 +13137,7 @@
     "segmentHint": "كل شريحة = مجمع مجاني واحد · مجمع مفرود من التكرار، عدّ صادق (بدون حدود قصوى مضخمة لمعدل الطلبات).",
     "boost": "افتح حوالي {tokens} إضافية/شهرياً بشحن رصيد OpenRouter لمرة واحدة بقيمة 10$ (50 ← 1000 طلب/يوم)",
     "uncapped": "مجاني بشكل دائم، بدون حد أقصى معلن (محدود بمعدل الطلبات) — وصول حقيقي، لا يُحتسب في العنوان الرئيسي:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# نموذج تم وضع علامة عليه كمقيد بشروط الخدمة} other {# نماذج تم وضع علامة عليها كمقيدة بشروط الخدمة}} — القرار لك",
     "provider": "المزود",
     "model": "النموذج",

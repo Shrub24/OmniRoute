@@ -115,3 +115,37 @@ test("legacy provider-level catalog agrees with the per-model catalog for the re
   assert.equal(FREE_TIER_BUDGETS.groq, 30_000_000);
   assert.equal(FREE_TIER_BUDGETS.nara, 210_000_000);
 });
+
+test("modelscope: 250 魔粒/day → 6M/month, one pool, behind mainland real-name verification", () => {
+  const m = rows("modelscope");
+  assert.ok(m.length >= 1);
+  for (const r of m) {
+    assert.equal(r.monthlyTokens, 6_000_000, r.modelId);
+    assert.equal(r.poolKey, "modelscope-free");
+    assert.equal(r.freeType, "recurring-daily");
+    assert.equal(r.eligibilityGate, "regional-identity");
+    assert.equal(r.tos, "caution");
+  }
+  const t = computeFreeModelTotals();
+  assert.equal(t.gatedRecurringTokens, 6_000_000);
+  assert.deepEqual(t.gatedProviders, ["modelscope"]);
+  assert.ok(!t.uncappedProviders.includes("modelscope"));
+});
+
+test("a shared pool never mixes gated and ungated entries", () => {
+  const byPool = new Map<string, Set<string>>();
+  for (const r of FREE_MODEL_BUDGETS) {
+    if (!r.poolKey) continue;
+    const gate = r.eligibilityGate ?? "none";
+    const seen = byPool.get(r.poolKey) ?? new Set<string>();
+    seen.add(gate);
+    byPool.set(r.poolKey, seen);
+  }
+  for (const [poolKey, gates] of byPool) {
+    assert.equal(
+      gates.size,
+      1,
+      `pool ${poolKey} mixes eligibility gates: ${[...gates].join(", ")}`
+    );
+  }
+});

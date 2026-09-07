@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Balances remaining quota against 5h and weekly resets, then round-robins similar scores",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Birləşmə",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Prefer cheapest available account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Prefer accounts with healthy remaining quota and nearer resets",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "Provayder-model sinxronizasiyasından sonra canlı kataloqdan ~/.codex/*.config.toml profillərini yenidən yaradın. Bu, heç vaxt aktiv və ya defolt Codex konfiqurasiyasını dəyişmir və defolt olaraq qapalıdır."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Provayder-model sinxronizasiyasından sonra canlı kataloqdan ~/.claude/profiles/<name>/settings.json profillərini yenidən yaradın. Bu, heç vaxt aktiv və ya defolt Claude konfiqurasiyasını dəyişmir və defolt olaraq qapalıdır."
+        "description": "Provayder-model sinxronizasiyasından sonra canlı kataloqdan ~/.claude/profiles/'<name>'/settings.json profillərini yenidən yaradın. Bu, heç vaxt aktiv və ya defolt Claude konfiqurasiyasını dəyişmir və defolt olaraq qapalıdır."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Yerli instansiyanın sağlamlıq yoxlaması son nöqtəsini sıradan çıxarın."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Hər seqment = bir pulsuz hovuz · hovuz üzrə təkrarlanmayan, dürüst sayım (şişirdilmiş sorğu limiti tavanları olmadan).",
     "boost": "Birdəfəlik $10 OpenRouter balans artımı ilə ayda ~{tokens} daha çox əldə edin (50 → 1000 sorğu/gün)",
     "uncapped": "Həmişəlik pulsuz, dərc edilmiş limit yoxdur (sorğu sayı məhdudlaşdırılıb) — real giriş, əsas göstəricidə sayılmır:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model} other {# model}} ToS ilə məhdudlaşdırılmış kimi qeyd edilib — qərar sizindir",
     "provider": "Provayder",
     "model": "Model",

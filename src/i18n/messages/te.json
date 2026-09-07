@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "రీసెట్-అవేర్ RR",
     "resetAwareDesc": "5గం మరియు వారపు రీసెట్‌లకు వ్యతిరేకంగా మిగిలిన కోటాను బ్యాలెన్స్ చేస్తుంది, ఆపై రౌండ్-రాబిన్‌లు సారూప్య స్కోర్‌లు",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "ఫ్యూజన్",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Prefer cheapest available account",
     "resetAware": "రీసెట్-అవేర్ RR",
     "resetAwareDesc": "ఆరోగ్యకరమైన మిగిలిన కోటా మరియు సమీప రీసెట్‌లతో ఖాతాలకు ప్రాధాన్యత ఇవ్వండి",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "ప్రొవైడర్-మోడల్ సమకాలీకరణ తర్వాత, లైవ్ కేటలాగ్ నుండి ~/.codex/*.config.toml ప్రొఫైల్‌లను తిరిగి సృష్టించండి. ఇది సక్రియ లేదా డిఫాల్ట్ Codex కాన్గ్రిగేషన్‌ను ఎప్పటికీ మార్చదు మరియు డిఫాల్ట్‌గా ఆఫ్‌లో ఉంటుంది."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "ప్రొవైడర్-మోడల్ సమకాలీకరణ తర్వాత, లైవ్ కేటలాగ్ నుండి ~/.claude/profiles/<name>/settings.json ప్రొఫైల్‌లను తిరిగి సృష్టించండి. ఇది సక్రియ లేదా డిఫాల్ట్ Claude కాన్ఫిగరేషన్‌ను ఎప్పటికీ మార్చదు మరియు డిఫాల్ట్‌గా ఆఫ్‌లో ఉంటుంది."
+        "description": "ప్రొవైడర్-మోడల్ సమకాలీకరణ తర్వాత, లైవ్ కేటలాగ్ నుండి ~/.claude/profiles/'<name>'/settings.json ప్రొఫైల్‌లను తిరిగి సృష్టించండి. ఇది సక్రియ లేదా డిఫాల్ట్ Claude కాన్ఫిగరేషన్‌ను ఎప్పటికీ మార్చదు మరియు డిఫాల్ట్‌గా ఆఫ్‌లో ఉంటుంది."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "స్థానిక ఇన్‌స్టాన్స్ హెల్త్-చెక్ ఎండ్‌పాయింట్‌ను నిలిపివేయండి."
@@ -13133,6 +13137,7 @@
     "segmentHint": "ప్రతి విభాగం = ఒక ఉచిత పూల్ · పూల్-డూప్లికేట్ తీసివేసినది, నిజాయితీ గల లెక్కింపు (ఎక్కువ చేసి చూపిన రేట్-పరిమితి గరిష్టాలు లేవు).",
     "boost": "ఒకేసారి $10 OpenRouter టాప్-అప్‌తో నెలకు మరో ~{tokens} అన్‌లాక్ చేయండి (రోజుకు 50 → 1000 అభ్యర్థనలు)",
     "uncapped": "శాశ్వతంగా ఉచితం, ప్రచురించిన పరిమితి లేదు (రేట్-పరిమితం చేయబడింది) — నిజమైన యాక్సెస్, హెడ్‌లైన్‌లో లెక్కించబడదు:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# మోడల్} other {# మోడల్స్}} ToS-పరిమితం చేయబడినట్లుగా ఫ్లాగ్ చేయబడ్డాయి — మీరే నిర్ణయించుకోండి",
     "provider": "ప్రొవైడర్",
     "model": "మోడల్",

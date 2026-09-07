@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Afbalancerer resterende kvote mod 5 timer og ugentlige nulstillinger, og runder derefter lignende resultater",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusion",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Foretrækker den billigste tilgængelige konto",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Foretrækker konti med sund resterende kvote og nærmere nulstillinger",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky Limit",
@@ -12982,7 +12986,7 @@
         "description": "Efter udbyder-model-synkronisering regenereres ~/.codex/*.config.toml-profiler fra det aktive katalog. Dette ændrer aldrig den aktive eller standardmæssige Codex-konfiguration og er deaktiveret som standard."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Efter udbyder-model-synkronisering regenereres ~/.claude/profiles/<name>/settings.json-profiler fra det aktive katalog. Dette ændrer aldrig den aktive eller standardmæssige Claude-konfiguration og er deaktiveret som standard."
+        "description": "Efter udbyder-model-synkronisering regenereres ~/.claude/profiles/'<name>'/settings.json-profiler fra det aktive katalog. Dette ændrer aldrig den aktive eller standardmæssige Claude-konfiguration og er deaktiveret som standard."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Deaktivér slutpunktet for den lokale instans' tilstandstjek."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Hvert segment = én gratis pulje · pulje-dedupliceret, ærlig optælling (ingen oppustede hastighedsgrænselofter).",
     "boost": "Lås op for ~{tokens} mere/md. med en engangsoptankning på $10 hos OpenRouter (50 → 1000 anm./dag)",
     "uncapped": "Permanent gratis, intet offentliggjort loft (hastighedsbegrænset) — reel adgang, ikke talt med i overskriften:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model} other {# modeller}} markeret som ToS-begrænset — du bestemmer",
     "provider": "Udbyder",
     "model": "Model",

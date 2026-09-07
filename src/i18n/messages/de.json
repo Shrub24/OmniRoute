@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Leitet jeden wiederverwendbaren Prompt-Präfix konsistent zum selben Provider-Konto",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Gewichtet Restquote gegen 5h- und Wochen-Resets und rotiert ähnliche Scores per Round Robin",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusion",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Bevorzugen Sie das günstigste verfügbare Konto",
     "resetAware": "Reset-Aware RR",
     "resetAwareDesc": "Bevorzugt Konten mit gesunder Restquote und näherem Reset",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Sticky-Limit",
@@ -12989,7 +12993,7 @@
         "description": "Nach der Anbieter-Modell-Synchronisierung ~/.codex/*.config.toml-Profile aus dem Live-Katalog neu generieren. Dies ändert niemals die aktive oder Standard-Codex-Konfiguration und ist standardmäßig deaktiviert."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "Nach der Anbieter-Modell-Synchronisierung ~/.claude/profiles/<name>/settings.json-Profile aus dem Live-Katalog neu generieren. Dies ändert niemals die aktive oder Standard-Claude-Konfiguration und ist standardmäßig deaktiviert."
+        "description": "Nach der Anbieter-Modell-Synchronisierung ~/.claude/profiles/'<name>'/settings.json-Profile aus dem Live-Katalog neu generieren. Dies ändert niemals die aktive oder Standard-Claude-Konfiguration und ist standardmäßig deaktiviert."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Den Health-Check-Endpunkt der lokalen Instanz deaktivieren."
@@ -13140,6 +13144,7 @@
     "segmentHint": "Jedes Segment = ein kostenloser Pool · Pool-dedupliziert, ehrliche Zählung (keine künstlich erhöhten Rate-Limit-Obergrenzen).",
     "boost": "Schalten Sie ~{tokens} mehr/Monat mit einer einmaligen $10 OpenRouter-Aufladung frei (50 → 1000 Anfr./Tag)",
     "uncapped": "Dauerhaft kostenlos, kein veröffentlichtes Limit (ratenbegrenzt) — echter Zugang, nicht in der Überschrift gezählt:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# Modell} other {# Modelle}} als ToS-eingeschränkt markiert — Sie entscheiden",
     "provider": "Anbieter",
     "model": "Modell",

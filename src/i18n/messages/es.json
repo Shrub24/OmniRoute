@@ -3261,6 +3261,8 @@
     "cacheOptimizedDesc": "Routes each reusable prompt prefix consistently to the same provider account",
     "resetAware": "RR con reconocimiento de reinicio",
     "resetAwareDesc": "Equilibra la cuota restante con los restablecimientos semanales y de 5 h, y luego realiza todos contra todos puntuaciones similares",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each model once before reshuffling",
     "fusion": "Fusion",
@@ -7058,6 +7060,8 @@
     "costOptDesc": "Prefiere la cuenta más barata disponible",
     "resetAware": "RR con reconocimiento de reinicio",
     "resetAwareDesc": "Prefiere cuentas con cuota restante saludable y reinicios más cercanos",
+    "quotaWeighted": "Quota-Weighted",
+    "quotaWeightedDesc": "Skip exhausted accounts, then pick among the rest in proportion to reset-aware leftover.",
     "strictRandom": "Strict Random",
     "strictRandomDesc": "Shuffle deck — uses each account once before reshuffling",
     "stickyLimit": "Límite fijo",
@@ -12982,7 +12986,7 @@
         "description": "After provider-model synchronization, regenerate ~/.codex/*.config.toml profiles from the live catalog. This never changes the active or default Codex configuration and is off by default."
       },
       "OMNIROUTE_AUTO_SYNC_CLAUDE_PROFILES": {
-        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/<name>/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
+        "description": "After provider-model synchronization, regenerate ~/.claude/profiles/'<name>'/settings.json profiles from the live catalog. This never changes the active or default Claude configuration and is off by default."
       },
       "OMNIROUTE_DISABLE_LOCAL_HEALTHCHECK": {
         "description": "Disable the local instance health-check endpoint."
@@ -13133,6 +13137,7 @@
     "segmentHint": "Each segment = one free pool · pool-deduped, honest counting (no inflated rate-limit ceilings).",
     "boost": "Unlock ~{tokens} more/mo with a one-time $10 OpenRouter top-up (50 → 1000 req/day)",
     "uncapped": "Permanently free, no published cap (rate-limited) — real access, not counted in the headline:",
+    "gated": "__MISSING__:~{tokens}/mo more behind a regional identity check (e.g. mainland-China real-name verification) — real quota, not counted in the headline:",
     "tosRestricted": "{count, plural, one {# model} other {# models}} flagged as ToS-restricted — you decide",
     "provider": "Provider",
     "model": "Model",
