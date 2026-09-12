@@ -14,6 +14,7 @@ import type { ComboDiagnostics } from "../../utils/error.ts";
 import { COMBO_FAILURE_THRESHOLD, recordComboFailure } from "./failureTracker.ts";
 import { buildNoUpstreamResponseDiagnostics, buildRecoveryHint } from "./pinRecovery.ts";
 import { formatExhaustedConnectionKey } from "./comboDiagFormat.ts";
+import { collectQuotaWindowExclusions, formatQuotaSkipMessage } from "./quotaSkipDiagnostics.ts";
 import { recordComboRequest } from "../comboMetrics.ts";
 import { notifyWebhookEvent } from "../../../src/lib/webhookDispatcher.ts";
 import { parseModel } from "../model.ts";
@@ -32,7 +33,12 @@ import {
   waitForCooldownAwareRetry,
 } from "../../../src/sse/services/cooldownAwareRetry.ts";
 import { toRetryAfterDisplayValue } from "./validateQuality.ts";
-import { finalizeComboTrace, finishComboTrace } from "./decisionTrace.ts";
+import {
+  finalizeComboTrace,
+  finishComboTrace,
+  getComboTrace,
+  summarizeSkippedTargets,
+} from "./decisionTrace.ts";
 import { isRetryAfterEligibleStatus } from "./unavailableRetryGate.ts";
 import { withQuotaExhaustionClassification } from "./quotaExhaustion.ts";
 import {
@@ -125,10 +131,23 @@ export async function dispatchWithCooldownRetry(opts: {
         excluded: [
           ...[...state.exhaustedProviders].map((p) => ({ provider: p, reason: "exhausted" })),
           ...[...state.exhaustedConnections].map((c) => formatExhaustedConnectionKey(String(c))),
+          ...(terminalReason === "all_targets_skipped"
+            ? collectQuotaWindowExclusions(state.orderedTargets)
+            : []),
         ],
         attemptOrder: state.comboAttemptOrder,
         terminalReason,
         recovery: buildRecoveryHint(terminalReason, retryAfterSeconds),
+        // #12659: surface per-target skip reasons (e.g. persisted_cooldown)
+        // that `excluded` above never captures — only worth the trace lookup
+        // on the diagnostic-heavy terminal reason.
+        skippedTargets:
+          terminalReason === "all_targets_skipped"
+            ? summarizeSkippedTargets(getComboTrace(deps.traceInvocationId)).map((g) => ({
+                reason: g.reason,
+                targets: g.targets,
+              }))
+            : undefined,
       });
 
       let globalResolve: ((res: Response) => void) | null = null;
@@ -408,10 +427,15 @@ export async function dispatchWithCooldownRetry(opts: {
             latencyMs,
             fallbackCount: state.fallbackCount,
           });
+          const quotaSkip = formatQuotaSkipMessage(
+            collectQuotaWindowExclusions(state.orderedTargets)
+          );
           return withQuotaExhaustionClassification(
             errorResponseWithComboDiagnostics(
               503,
-              "Service temporarily unavailable: all targets were skipped by pre-dispatch filters",
+              quotaSkip
+                ? `Service temporarily unavailable: all targets were skipped by pre-dispatch filters (${quotaSkip})`
+                : "Service temporarily unavailable: all targets were skipped by pre-dispatch filters",
               buildComboDiag("all_targets_skipped"),
               { code: "ALL_TARGETS_SKIPPED", type: "service_unavailable" }
             ),

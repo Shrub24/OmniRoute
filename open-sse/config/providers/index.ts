@@ -136,6 +136,7 @@ import { freemodel_devProvider } from "./registry/freemodel-dev/index.ts";
 import { gitlawb_gmiProvider } from "./registry/gitlawb/gmi/index.ts";
 import { gitlawbProvider } from "./registry/gitlawb/index.ts";
 import { liquidProvider } from "./registry/liquid/index.ts";
+import { arceeAiProvider } from "./registry/arcee-ai/index.ts";
 import { deepinfraProvider } from "./registry/deepinfra/index.ts";
 import { agyProvider } from "./registry/agy/index.ts";
 import { agnesProvider } from "./registry/agnes/index.ts";
@@ -249,6 +250,8 @@ import { electronhubProvider } from "./registry/electronhub/index.ts";
 import { llmgatewayProvider } from "./registry/llmgateway/index.ts";
 import { llmKiwiProvider } from "./registry/llm-kiwi/index.ts";
 import { literouterProvider } from "./registry/literouter/index.ts";
+import { greenptProvider } from "./registry/greenpt/index.ts";
+import { eurouterProvider } from "./registry/eurouter/index.ts";
 import { mnnAiProvider } from "./registry/mnn-ai/index.ts";
 import { meganovaAiProvider } from "./registry/meganova-ai/index.ts";
 import { mixlayerProvider } from "./registry/mixlayer/index.ts";
@@ -407,6 +410,7 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   "gitlawb-gmi": gitlawb_gmiProvider,
   gitlawb: gitlawbProvider,
   liquid: liquidProvider,
+  "arcee-ai": arceeAiProvider,
   deepinfra: deepinfraProvider,
   agy: agyProvider,
   agnes: agnesProvider,
@@ -524,6 +528,8 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   llmgateway: llmgatewayProvider,
   "llm-kiwi": llmKiwiProvider,
   literouter: literouterProvider,
+  greenpt: greenptProvider,
+  eurouter: eurouterProvider,
   "mnn-ai": mnnAiProvider,
   "meganova-ai": meganovaAiProvider,
   mixlayer: mixlayerProvider,
