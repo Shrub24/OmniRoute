@@ -14,7 +14,7 @@
  * packs, "Bonus Pack N" for bonus packs (soonest-expiring first).
  */
 
-import { CODEBUDDY_CN_USER_AGENT } from "@/lib/oauth/constants/oauth";
+import { CODEBUDDY_CN_USER_AGENT } from "../../config/providers/registry/codebuddy-cn/userAgent.ts";
 
 const USAGE_URL = "https://copilot.tencent.com/v2/billing/meter/get-user-resource";
 
