@@ -1,4 +1,4 @@
-import { CODEBUDDY_CN_USER_AGENT } from "@/lib/oauth/constants/oauth";
+import { CODEBUDDY_CN_USER_AGENT } from "./userAgent.ts";
 import type { RegistryEntry } from "../../shared.ts";
 
 /**
