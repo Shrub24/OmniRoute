@@ -14,7 +14,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { notify } from "../src/index.js";
+import { notify, notifyUi } from "../src/index.js";
 
 function captureConsole(isTTY: boolean | undefined, fn: (calls: string[]) => void): void {
   const origIsTTY = process.stdout.isTTY;
@@ -47,4 +47,27 @@ test("notify: writes when stdout is not a TTY (headless keeps notices)", () => {
     notify("warn", "skipped");
     assert.deepEqual(calls, ["info:registered", "warn:skipped"]);
   });
+});
+
+test("notifyUi: uses ctx.ui.notify in TUI/RPC modes", () => {
+  const calls: Array<{ message: string; type?: string }> = [];
+  const uiCtx = {
+    mode: "tui",
+    ui: { notify: (message: string, type?: "info" | "warning" | "error") => { calls.push({ message, type }); } },
+  };
+  notifyUi(uiCtx, "info", "synced");
+  assert.deepEqual(calls, [{ message: "synced", type: "info" }]);
+  notifyUi({ ...uiCtx, mode: "rpc" }, "error", "failed");
+  assert.deepEqual(calls[1], { message: "failed", type: "error" });
+});
+
+test("notifyUi: falls back to stdout in print/headless modes", () => {
+  const calls: Array<{ message: string; type?: string }> = [];
+  const uiCtx = {
+    mode: "print",
+    ui: { notify: (message: string, type?: "info" | "warning" | "error") => { calls.push({ message, type }); } },
+  };
+  // stdout is not a TTY under the test runner, so the legacy route writes.
+  notifyUi(uiCtx, "info", "synced");
+  assert.equal(calls.length, 0);
 });

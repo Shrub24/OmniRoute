@@ -20,18 +20,29 @@ import {
 export { defaultOmniRouteModelsFetcher } from "./models.js";
 export type { OmniRouteModelsFetcher, OmniRouteRawModelEntry } from "./models.js";
 
-/**
- * Emit a notice ONLY when stdout is not a TTY (headless `pi -p` keeps full
- * observability). Pi's fullscreen TUI shares the stdout/stderr stream, so any
- * extension `console.*` output glitches into it — under a TTY we emit zero
- * bytes. Loud thrown errors are unchanged (Pi renders those through its own
- * UI). `registerCommand` handlers return void, so there is no Pi-native
- * message channel to use instead — TTY-gating is the sanctioned fix.
- */
 export function notify(level: "info" | "warn", message: string): void {
   if (process.stdout.isTTY) return;
   if (level === "warn") console.warn(message);
   else console.info(message);
+}
+
+/**
+ * Emit a notice through Pi's own UI when available, else stdout.
+ *
+ * `ctx.ui.notify` is the idiomatic channel: in the TUI it renders through Pi's
+ * notification UI (no `console.*` glitch into the fullscreen stream); in
+ * headless/print mode there is no dialog UI, so it falls back to stdout. The
+ * process-startup path (factory body) has no `ctx` yet, so there it still uses
+ * the legacy `notify` TTY-gated stdout route. Loud thrown errors are unchanged
+ * (Pi renders those itself).
+ */
+export function notifyUi(
+  ctx: { ui: { notify: (message: string, type?: "info" | "warning" | "error") => void }; mode?: string },
+  level: "info" | "warning" | "error",
+  message: string
+): void {
+  if (ctx?.mode === "tui" || ctx?.mode === "rpc") ctx.ui.notify(message, level);
+  else notify(level === "info" ? "info" : "warn", message);
 }
 export {
   buildOmniRouteProviderConfig,
@@ -283,27 +294,38 @@ export default async function (pi: ExtensionAPI): Promise<void> {
   pi.registerCommand("omniroute-sync", {
     description:
       "Re-fetch the OmniRoute catalog and re-register the omniroute provider (applies immediately, no restart).",
-    handler: async () => {
+    handler: async (_args, ctx) => {
       const fresh = await resync();
-      notify(
+      notifyUi(
+        ctx,
         "info",
         `[@omniroute/pi-agent] re-synced "omniroute" provider: ${fresh.models!.length} models`
       );
     },
   });
 
-  pi.on("session_start", (event) => {
+  pi.on("session_start", (event, ctx) => {
     // The factory already fetched at startup; a reload re-runs the factory.
     // Refresh on subsequent session starts so the catalog stays current
     // without a restart, even if the operator never runs /omniroute-sync.
+    // A failed background refresh notifies and keeps the previous catalog.
     if (event.reason === "startup" || event.reason === "reload") return;
-    void resync().catch((err) => {
-      notify(
-        "warn",
-        `[@omniroute/pi-agent] session-start re-sync failed (previous catalog kept): ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-    });
+    return resync()
+      .then((fresh) => {
+        notifyUi(
+          ctx,
+          "info",
+          `[@omniroute/pi-agent] session-start re-sync: ${fresh.models!.length} models`
+        );
+      })
+      .catch((err) => {
+        notifyUi(
+          ctx,
+          "error",
+          `[@omniroute/pi-agent] session-start re-sync failed (previous catalog kept): ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        );
+      });
   });
 }

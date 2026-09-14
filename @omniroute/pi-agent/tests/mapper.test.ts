@@ -518,3 +518,40 @@ test("orchestrator: models fetch failure is LOUD (never a silent empty list)", a
     /models down/
   );
 });
+
+test("compat: every mapped entry sends the pin-readable session header", async (t) => {
+  // `sessionAffinityFormat: "openrouter"` is load-bearing, not decorative:
+  // Pi's openai-completions path only emits `x-session-id` — the ONE header
+  // OmniRoute's extractSessionAffinityKey actually reads for account pinning —
+  // under the "openrouter" format. The default "openai" format emits
+  // `x-session-affinity` / `x-client-request-id` / `session_id`, which
+  // OmniRoute ignores for pinning (the first only feeds the opencode executor
+  // synthesis), so "on" without "openrouter" still falls back to hashing the
+  // first input text.
+  // OmniRoute derives its session-affinity key from client session headers;
+  // without the flag Pi sends none and OmniRoute falls back to hashing the
+  // first input text — a key that changes every turn and defeats account
+  // pinning. Only Pi's openai-completions path reads the flag, which is the
+  // api every OmniRoute model resolves to (the other option, openai-responses,
+  // has no affinity headers).
+  const server = await startStubModelsServer();
+  t.after(() => server.close());
+
+  const config = await buildOmniRouteProviderConfigFromCatalog(server.baseURL, "test-key");
+  const without = config.models!.filter(
+    (m) => m.compat?.sendSessionAffinityHeaders !== true || m.compat?.sessionAffinityFormat !== "openrouter"
+  );
+  assert.deepEqual(
+    without.map((m) => m.id),
+    [],
+    `every registered model must carry sendSessionAffinityHeaders + openrouter format; missing: ${without.map((m) => m.id).join(", ")}`
+  );
+
+  // Raw mapping path too (a bare entry, not just orchestrator output).
+  const mapped = mapRawEntryToProviderModel(STUB_CATALOG[0], BASE).compat;
+  assert.equal(mapped?.sendSessionAffinityHeaders, true);
+  assert.equal(mapped?.sessionAffinityFormat, "openrouter");
+  const comboMapped = mapComboToProviderModel(STUB_COMBOS[0], [chatFull, tierless], BASE).compat;
+  assert.equal(comboMapped?.sendSessionAffinityHeaders, true);
+  assert.equal(comboMapped?.sessionAffinityFormat, "openrouter");
+});
