@@ -362,6 +362,10 @@ export function mapComboToProviderModel(
     cost: { ...ZERO_COST },
     contextWindow: contextLength ?? DEFAULT_CONTEXT_WINDOW,
     maxTokens: maxTokens ?? DEFAULT_MAX_TOKENS,
+    // Same rationale as mapRawEntryToProviderModel: keep Pi's session identity
+    // flowing so OmniRoute's account pinning keys on the session, not on a
+    // hash of the first input text.
+    compat: { sendSessionAffinityHeaders: true, sessionAffinityFormat: "openrouter" },
     ...(thinkingLevelMap ? { thinkingLevelMap } : {}),
   };
 }
@@ -405,5 +409,6 @@ export function mapAutoComboToProviderModel(
     cost: { ...ZERO_COST },
     contextWindow: context,
     maxTokens: output,
+    compat: { sendSessionAffinityHeaders: true, sessionAffinityFormat: "openrouter" },
   };
 }

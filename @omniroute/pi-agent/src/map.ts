@@ -168,6 +168,13 @@ export function mapRawEntryToProviderModel(
     cost: { ...ZERO_COST },
     contextWindow: contextLength ?? DEFAULT_CONTEXT_WINDOW,
     maxTokens: maxTokens ?? DEFAULT_MAX_TOKENS,
+    // OmniRoute derives its session-affinity key (account pinning,
+    // src/sse/services/sessionAffinityPin.ts) from client session headers;
+    // without this flag Pi sends none and falls back to hashing the first
+    // input text, which re-keys every turn. Only the openai-completions path
+    // reads the flag (the responses API has no affinity headers), and every
+    // OmniRoute model resolves to one of the two.
+    compat: { sendSessionAffinityHeaders: true, sessionAffinityFormat: "openrouter" },
     ...(thinkingLevelMap ? { thinkingLevelMap: buildThinkingLevelMap(thinkingLevelMap) } : {}),
   };
 }
