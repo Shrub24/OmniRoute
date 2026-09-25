@@ -182,6 +182,10 @@ export const PACK_ARTIFACT_ROOT_ALLOWED_PATH_PREFIXES: string[] = [
   // allowlist, so every packed file under it read as an unexpected artifact.
   "@omniroute/opencode-plugin-v2/",
   "@omniroute/opencode-provider/",
+  // Fork-only: the Pi agent extension. package.json "files" ships @omniroute/
+  // wholesale, so upstream's pack-artifact-policy test (added in the v3.8.51
+  // sync) requires every @omniroute/* package directory to be listed here.
+  "@omniroute/pi-agent/",
   "bin/cli/",
   // Broad open-sse + src source dirs added to package.json "files" in v3.8.21
   // to allow TypeScript-first imports from the published package.
