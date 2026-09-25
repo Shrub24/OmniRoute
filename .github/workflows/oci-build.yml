@@ -9,8 +9,12 @@
 #     :sha-<short> (immutable per-commit)
 #
 # Hosted-runner safety is inherited from the Dockerfile defaults (webpack via
-# OMNIROUTE_USE_TURBOPACK=0 on 7 GB runners, 1 page-data worker, 6 GB heap
-# ceiling) — the same defaults upstream's arm64 hosted builds use.
+# OMNIROUTE_USE_TURBOPACK=0, 1 page-data worker), except for the V8 heap ceiling:
+# the runner is 4 vCPU / 16 GB (`docker info`, run 2026-09-25), and after the
+# upstream sync the build needs more than the Dockerfile's 6144 MB default —
+# it died with "FATAL ERROR: Ineffective mark-compacts near heap limit
+# Allocation failed - JavaScript heap out of memory" at 253 s. 12288 is what
+# upstream's docker-publish.yml passes on the same 16 GB runner class.
 name: OCI Build
 
 on:
@@ -68,10 +72,12 @@ jobs:
           context: .
           target: runner-base
           platforms: linux/amd64
-          # Hosted runner (7 GB): webpack, not Turbopack — same as upstream's
-          # hosted arm64 path.
+          # Hosted runner: 4 vCPU / 16 GB. Webpack, not Turbopack — same as
+          # upstream's hosted arm64 path. Heap ceiling raised above the
+          # Dockerfile's 6144 MB default: see the header comment.
           build-args: |
             OMNIROUTE_USE_TURBOPACK=0
+            OMNIROUTE_BUILD_MEMORY_MB=12288
           push: true
           tags: |
             ${{ steps.meta.outputs.image }}:edge
