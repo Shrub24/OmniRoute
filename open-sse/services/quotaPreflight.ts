@@ -21,6 +21,7 @@
 import { isCompatibleProviderConnectionId } from "@/shared/utils/compatibleProviderId";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { isClaudeExtraUsageAllowed } from "@/lib/providers/claudeExtraUsage";
+import { isQuotaHealthy } from "@/domain/quotaCache";
 import { fetchNewApiAggregatorQuota } from "./newApiAggregatorQuotaFetcher.ts";
 import {
   isAntigravityQuotaProvider,
@@ -39,6 +40,8 @@ export interface QuotaCutoffScope {
   provider?: string | null;
   requestedModel?: string | null;
   providerSpecificData?: unknown;
+  // #14359 — recent successful dispatch stands the cutoff down for this connection.
+  connectionId?: string | null;
 }
 
 export interface QuotaWindowInfo {
@@ -205,38 +208,89 @@ function limitReachedResult(quota: QuotaInfo): PreflightQuotaResult {
   );
 }
 
+function isEntryExhausted(
+  windowName: string,
+  percentUsed: number,
+  thresholds?: PreflightQuotaThresholds
+): boolean {
+  const minRemainingPercent = resolveOrDefault(
+    thresholds?.resolveMinRemainingPercent,
+    windowName,
+    DEFAULT_MIN_REMAINING_PERCENT
+  );
+  return isRemainingAtOrBelowThreshold(remainingPercentFrom(percentUsed), minRemainingPercent);
+}
+
+function evaluateQuotaGroup(
+  entries: Array<[string, QuotaWindowInfo]>,
+  thresholds?: PreflightQuotaThresholds
+): {
+  exhausted: boolean;
+  worstPercent: number;
+  worstWindow: string | null;
+  worstResetAt: string | null;
+} {
+  let exhausted = true;
+  let worstPercent = -1;
+  let worstWindow: string | null = null;
+  let worstResetAt: string | null = null;
+  for (const [windowName, windowInfo] of entries) {
+    if (!isEntryExhausted(windowName, windowInfo.percentUsed, thresholds)) {
+      exhausted = false;
+    }
+    if (windowInfo.percentUsed > worstPercent) {
+      worstPercent = windowInfo.percentUsed;
+      worstWindow = windowName;
+      worstResetAt = windowInfo.resetAt ?? null;
+    }
+  }
+  return { exhausted, worstPercent: Math.max(0, worstPercent), worstWindow, worstResetAt };
+}
+
+function groupQuotaWindowsByBase(
+  windows: NonNullable<QuotaInfo["windows"]>
+): Map<string, Array<[string, QuotaWindowInfo]>> {
+  const groups = new Map<string, Array<[string, QuotaWindowInfo]>>();
+  for (const [windowName, windowInfo] of Object.entries(windows)) {
+    if (!Number.isFinite(windowInfo.percentUsed)) continue;
+    const base = windowName.endsWith("_freetrial") ? windowName.slice(0, -10) : windowName;
+    const list = groups.get(base);
+    if (list) list.push([windowName, windowInfo]);
+    else groups.set(base, [[windowName, windowInfo]]);
+  }
+  return groups;
+}
+
 function quotaWindowCutoffResult(
   windows: NonNullable<QuotaInfo["windows"]>,
   thresholds?: PreflightQuotaThresholds
 ): PreflightQuotaResult | null {
-  let worstUsedPercent = 0;
-  let worstWindow: string | null = null;
-  let worstResetAt: string | null = null;
+  const groups = groupQuotaWindowsByBase(windows);
+  if (groups.size === 0) return null;
 
-  for (const [windowName, windowInfo] of Object.entries(windows)) {
-    if (!Number.isFinite(windowInfo.percentUsed)) continue;
-    const minRemainingPercent = resolveOrDefault(
-      thresholds?.resolveMinRemainingPercent,
-      windowName,
-      DEFAULT_MIN_REMAINING_PERCENT
+  let worstExhaustedPercent = 0;
+  let worstExhaustedWindow: string | null = null;
+  let worstExhaustedResetAt: string | null = null;
+  let hasExhaustedGroup = false;
+
+  for (const entries of groups.values()) {
+    const { exhausted, worstPercent, worstWindow, worstResetAt } = evaluateQuotaGroup(
+      entries,
+      thresholds
     );
-    if (
-      !isRemainingAtOrBelowThreshold(
-        remainingPercentFrom(windowInfo.percentUsed),
-        minRemainingPercent
-      )
-    ) {
-      continue;
+    if (exhausted) {
+      hasExhaustedGroup = true;
+      if (worstPercent > worstExhaustedPercent || worstExhaustedWindow === null) {
+        worstExhaustedPercent = worstPercent;
+        worstExhaustedWindow = worstWindow;
+        worstExhaustedResetAt = worstResetAt;
+      }
     }
-    if (windowInfo.percentUsed <= worstUsedPercent && worstWindow !== null) continue;
-    worstUsedPercent = windowInfo.percentUsed;
-    worstWindow = windowName;
-    worstResetAt = windowInfo.resetAt ?? null;
   }
 
-  return worstWindow === null
-    ? null
-    : exhaustedResult(worstUsedPercent, worstResetAt, worstWindow);
+  return hasExhaustedGroup
+    ? exhaustedResult(worstExhaustedPercent, worstExhaustedResetAt, worstExhaustedWindow)
+    : null;
 }
 
 function quotaPercentCutoffResult(
@@ -270,6 +324,10 @@ export function evaluateQuotaCutoff(
   // is gone. Pre-dispatch must not skip the account before Anthropic sees the
   // request; blockExtraUsage=false is the only opt-in.
   if (isClaudeExtraUsageAllowed(scope?.provider, scope?.providerSpecificData)) {
+    return { proceed: true, quotaPercent: quota.percentUsed };
+  }
+  // #14359 — same escape as the dispatch-time predicates: a recent success is not exhaustion.
+  if (scope?.connectionId && isQuotaHealthy(scope.connectionId)) {
     return { proceed: true, quotaPercent: quota.percentUsed };
   }
 
@@ -350,6 +408,7 @@ export async function preflightQuota(
     provider,
     requestedModel,
     providerSpecificData: connection.providerSpecificData,
+    connectionId,
   };
   const windows = quota.windows;
   if (windows && Object.keys(windows).length > 0) {

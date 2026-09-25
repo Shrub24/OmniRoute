@@ -56,6 +56,13 @@ export interface RegistryModel {
   liveCatalogIds?: readonly string[];
   toolCalling?: boolean;
   supportsReasoning?: boolean;
+  /**
+   * Model reasons unconditionally (always-on reasoning). When true,
+   * ensureThinkingBudget treats it as implicit reasoning opt-in so a tiny
+   * caller max_tokens gets the 4096 floor even without explicit thinking
+   * settings (#13198).
+   */
+  alwaysReasons?: boolean;
   supportedThinkingEfforts?: readonly string[];
   supportsVision?: boolean;
   supportsAudio?: boolean;
@@ -137,6 +144,16 @@ export interface RegistryEntry {
   responsesBaseUrl?: string;
   /** Provider-bound replay format; omitted providers accept portable plaintext reasoning. */
   reasoningTransport?: ReasoningTransport;
+  /**
+   * Thinking-mode upstreams proxied by this provider require the assistant's
+   * prior-turn `reasoning_content` to be echoed back on every follow-up request
+   * (e.g. DeepSeek-reselling gateways such as `bai`). Standard OpenAI-shaped
+   * clients do not preserve that field when replaying history, so when this is
+   * `true`, DefaultExecutor injects a placeholder via
+   * `open-sse/utils/reasoningContentInjector.ts` for model ids matching
+   * `isThinkingMessageModel()`. See issue #13599.
+   */
+  requiresReasoningContentEcho?: boolean;
   /** Anthropic-native /v1/messages endpoint (e.g. GitHub Copilot's shim) used
    *  for models tagged `targetFormat: "claude"` on an otherwise openai-format
    *  provider — see registry/github/index.ts. */
@@ -166,6 +183,11 @@ export interface RegistryEntry {
   chatPath?: string;
   clientVersion?: string;
   timeoutMs?: number;
+  /** Headers-wait ceiling override for streaming requests (#11526). Gateways
+   *  that buffer entire generations (Console Go / Command Code) need this well
+   *  above the 110s global cap — generateLegacyProviders() copies it into the
+   *  executor's LegacyProvider config. */
+  fetchStartTimeoutCapMs?: number;
   passthroughModels?: boolean;
   /**
    * Whether a non-empty synchronized live model list is exhaustive enough
@@ -223,6 +245,12 @@ export interface RegistryEntry {
    */
   ensureThinkingSignature?: boolean;
   /**
+   * Timezone offset to assume for zone-less (naive) reset timestamps in 429 error bodies
+   * (e.g. "+08:00" for Z.AI/GLM which outputs local Asia/Shanghai time).
+   * Defaults to "Z" (UTC).
+   */
+  naiveResetTimezone?: string;
+  /**
    * Protocolos alternativos que este provedor aceita (ex.: um endpoint
    * Anthropic-compatible alem do OpenAI-compatible padrao). A conexao escolhe
    * via providerSpecificData.targetFormat; ver config/providers/alternateFormats.ts.
@@ -264,6 +292,7 @@ export interface LegacyProvider {
   chatPath?: string;
   clientVersion?: string;
   timeoutMs?: number;
+  fetchStartTimeoutCapMs?: number;
 }
 
 export const buildModels = (ids: readonly string[]): RegistryModel[] =>

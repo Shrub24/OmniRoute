@@ -1,10 +1,13 @@
 import { PROVIDER_ID_TO_ALIAS, PROVIDER_MODELS } from "../config/providerModels.ts";
+import { ALIAS_TO_PROVIDER_ID, resolveProviderAlias } from "./providerAlias.ts";
 import { resolveWildcardAlias } from "./wildcardRouter.ts";
 import { getRegisteredProviderEffortBaseModelId } from "../utils/registeredEffortVariants.ts";
 // Lives in its own module so client components can resolve aliases without
 // pulling this router (and its `@/lib/db/readCache` imports) into the browser
 // bundle. See services/providerAlias.ts.
 import { ALIAS_TO_PROVIDER_ID, resolveProviderAlias } from "./providerAlias.ts";
+
+export { resolveProviderAlias };
 
 export { resolveProviderAlias };
 
@@ -74,6 +77,14 @@ const PROVIDER_MODEL_ALIASES: ProviderModelAliasMap = {
     "claude-opus-4-6": "claude-opus-4.6",
     "claude-sonnet-4-6": "claude-sonnet-4.6",
     "claude-sonnet-4-5": "claude-sonnet-4.5",
+    "claude-haiku-4-5": "claude-haiku-4.5",
+  },
+  // #13364: zed-hosted's passthrough catalog exposes short hyphenated Claude ids
+  // that don't match modelSpecs' dotted canonical alias, so capMaxOutputTokens()
+  // resolves no cap and thinking+tools requests inflate max_tokens unbounded.
+  // Scoped to claude-haiku-4-5 (the reported/reproduced model) — add Sonnet/Opus
+  // entries only once confirmed against the live Zed catalog.
+  "zed-hosted": {
     "claude-haiku-4-5": "claude-haiku-4.5",
   },
 };

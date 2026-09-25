@@ -1,4 +1,5 @@
 import { providerUsesAuthoritativeLiveCatalog } from "@omniroute/open-sse/config/providerRegistry";
+import { getSearchProvider } from "@omniroute/open-sse/config/searchRegistry.ts";
 import { PROVIDER_ID_TO_ALIAS } from "@omniroute/open-sse/config/providerModels.ts";
 import { ensureCursorAutoCatalogEntry } from "@/lib/providerModels/cursorAutoCatalog";
 import {
@@ -41,7 +42,29 @@ export type ProviderCatalogReconciliation = {
 type ProviderConnectionRef = {
   id: string;
   provider: string;
+  syncedModelsAt: string | null;
 };
+
+// #12849: a connection synced once and never refreshed must not pin routing to
+// that point-in-time snapshot forever — a live model the provider has since
+// added would be rejected as "unavailable" indefinitely. Once the synced
+// catalog exceeds this age (or was never timestamped — pre-migration rows),
+// getActiveSyncedCatalog stops treating it as authoritative and fails open,
+// matching the existing no-sync-yet behavior. Overridable for ops/testing.
+const DEFAULT_SYNCED_CATALOG_STALE_AFTER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function getSyncedCatalogStaleAfterMs(): number {
+  const raw = process.env.OMNIROUTE_SYNCED_CATALOG_STALE_AFTER_MS;
+  const parsed = raw !== undefined ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SYNCED_CATALOG_STALE_AFTER_MS;
+}
+
+function isSyncedAtFresh(syncedModelsAt: string | null): boolean {
+  if (!syncedModelsAt) return false;
+  const syncedAtMs = Date.parse(syncedModelsAt);
+  if (Number.isNaN(syncedAtMs)) return false;
+  return Date.now() - syncedAtMs <= getSyncedCatalogStaleAfterMs();
+}
 
 function resolveStoredProviderId(aliasOrId: string): string {
   const normalized = aliasOrId.trim();
@@ -92,6 +115,7 @@ function readConnectionRef(connection: unknown): ProviderConnectionRef | null {
   const record = connection as {
     id?: unknown;
     provider?: unknown;
+    syncedModelsAt?: unknown;
   };
 
   if (
@@ -106,6 +130,7 @@ function readConnectionRef(connection: unknown): ProviderConnectionRef | null {
   return {
     id: record.id,
     provider: record.provider,
+    syncedModelsAt: typeof record.syncedModelsAt === "string" ? record.syncedModelsAt : null,
   };
 }
 
@@ -179,27 +204,46 @@ async function unionCustomModels(
  * Return the unioned synced catalog belonging only to active connections.
  *
  * A provider is authoritative only when at least one active connection has a
- * non-empty usable catalog. Missing, empty, malformed, or unavailable state
- * fails open to the static registry.
+ * non-empty usable catalog that was synced recently enough (#12849). Missing,
+ * empty, malformed, stale, or unavailable state fails open to the static
+ * registry instead of gating on a frozen point-in-time snapshot forever.
  */
-async function loadConnectionCatalog(storedProviderId: string): Promise<SyncedAvailableModel[]> {
+type ConnectionCatalog = {
+  models: SyncedAvailableModel[];
+  hasFreshConnection: boolean;
+};
+
+async function loadConnectionCatalog(storedProviderId: string): Promise<ConnectionCatalog> {
   const [connections, modelsByConnection] = await Promise.all([
-    getRawProviderConnections({ provider: storedProviderId, isActive: true }, undefined, undefined, [
-      "id",
-      "provider",
-    ]),
+    getRawProviderConnections(
+      { provider: storedProviderId, isActive: true },
+      undefined,
+      undefined,
+      ["id", "provider", "synced_models_at"]
+    ),
     getSyncedAvailableModelsByConnection(storedProviderId),
   ]);
 
-  const activeConnectionIds = connections
+  const activeConnections = connections
     .map(readConnectionRef)
-    .filter((connection): connection is ProviderConnectionRef => connection !== null)
-    .map((connection) => connection.id);
+    .filter((connection): connection is ProviderConnectionRef => connection !== null);
 
-  return collectModelsForConnections(modelsByConnection, activeConnectionIds);
+  return {
+    models: collectModelsForConnections(
+      modelsByConnection,
+      activeConnections.map((connection) => connection.id)
+    ),
+    hasFreshConnection: activeConnections.some((connection) =>
+      isSyncedAtFresh(connection.syncedModelsAt)
+    ),
+  };
 }
 
-export async function getActiveSyncedCatalog(providerId: string): Promise<ActiveSyncedCatalog> {
+/** Set includeCustomModels=false for consumers that overlay custom rows separately. */
+export async function getActiveSyncedCatalog(
+  providerId: string,
+  includeCustomModels = true
+): Promise<ActiveSyncedCatalog> {
   const storedProviderId = resolveStoredProviderId(providerId);
   if (!storedProviderId) {
     return { authoritative: false, models: [] };
@@ -210,13 +254,18 @@ export async function getActiveSyncedCatalog(providerId: string): Promise<Active
     const siblingCatalogs = await Promise.all(lookupIds.map(loadConnectionCatalog));
     // #12866 unions the agy/antigravity sibling catalogs; #12934 then overlays the
     // picker-added customModels so dispatch admits the same rows the picker REST shows.
+    const discovered = unionModels(siblingCatalogs.map((catalog) => catalog.models));
     const models = enrichCursorCatalog(
       storedProviderId,
-      await unionCustomModels(storedProviderId, unionModels(siblingCatalogs))
+      includeCustomModels ? await unionCustomModels(storedProviderId, discovered) : discovered
     );
     if (models.length > 0) {
+      // #12849: only gate on this catalog while at least one sibling connection
+      // was synced recently — otherwise a one-time historical sync would keep
+      // rejecting live models forever with no way to self-recover.
+      const hasFreshConnection = siblingCatalogs.some((catalog) => catalog.hasFreshConnection);
       return {
-        authoritative: providerUsesAuthoritativeLiveCatalog(providerId),
+        authoritative: providerUsesAuthoritativeLiveCatalog(providerId) && hasFreshConnection,
         models,
       };
     }
@@ -237,7 +286,12 @@ export async function getActiveSyncedCatalog(providerId: string): Promise<Active
       authoritative: false,
       models: enrichCursorCatalog(
         storedProviderId,
-        await unionCustomModels(storedProviderId, await getSyncedAvailableModels(storedProviderId))
+        includeCustomModels
+          ? await unionCustomModels(
+              storedProviderId,
+              await getSyncedAvailableModels(storedProviderId)
+            )
+          : await getSyncedAvailableModels(storedProviderId)
       ),
     };
   } catch {
@@ -262,6 +316,11 @@ export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedA
       const connection = readConnectionRef(rawConnection);
       if (!connection) continue;
 
+      // Search providers have no chat models: their synced rows are the
+      // static-import UI's searchTypes (web/news/x), not routable catalog
+      // entries. Keep them out of the /v1/models live source.
+      if (getSearchProvider(connection.provider)) continue;
+
       if (!connectionIdsByProvider.has(connection.provider)) {
         connectionIdsByProvider.set(connection.provider, new Set());
       }
@@ -277,10 +336,7 @@ export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedA
 
         const models = enrichCursorCatalog(
           providerId,
-          await unionCustomModels(
-            providerId,
-            collectModelsForConnections(modelsByConnection, connectionIds)
-          )
+          collectModelsForConnections(modelsByConnection, connectionIds)
         );
 
         if (models.length > 0) {

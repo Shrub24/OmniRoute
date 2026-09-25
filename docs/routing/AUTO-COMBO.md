@@ -252,11 +252,12 @@ combo's stored config. These apply only to the `auto` strategy and only for the 
 that carries them; the combo's saved `modePack`/`budgetCap`/`budgetFallback` are used
 when the header is absent.
 
-| Header                        | Accepts                                                                                                                                                                                 | Effect                                                                                                                                                                                                                                               |
-| :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `X-OmniRoute-Mode`            | a preset alias (`fast`, `balanced`, `quality`, `cheap`, `reliable`, `offline`) or a raw pack name (`ship-fast`, `cost-saver`, `quality-first`, `offline-friendly`, `reliability-first`) | Overrides the scoring weights for this request. `balanced`/`default` force the default weights (no pack). Unknown values are ignored (config preserved).                                                                                             |
-| `X-OmniRoute-Budget`          | a positive number (max USD per request)                                                                                                                                                 | Hard cost ceiling: candidates whose estimated cost exceeds it are filtered before selection. What happens when **every** candidate exceeds it is controlled by `X-OmniRoute-Budget-Fallback` below.                                                  |
-| `X-OmniRoute-Budget-Fallback` | `cheapest` (default, aliases: `cheapest-viable`, `soft`) or `strict` (aliases: `block`, `hard`)                                                                                         | `cheapest`: falls back to the globally cheapest candidate even though it still exceeds the cap (legacy behavior). `strict`: refuses to select — the request fails fast with `HTTP 402` instead of silently overspending. Unknown values are ignored. |
+| Header                        | Accepts                                                                                                                                                                                 | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X-OmniRoute-Mode`            | a preset alias (`fast`, `balanced`, `quality`, `cheap`, `reliable`, `offline`) or a raw pack name (`ship-fast`, `cost-saver`, `quality-first`, `offline-friendly`, `reliability-first`) | Overrides the scoring weights for this request. `balanced`/`default` force the default weights (no pack). Unknown values are ignored (config preserved).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `X-OmniRoute-Budget`          | a positive number (max USD per request)                                                                                                                                                 | Hard cost ceiling: candidates whose estimated cost exceeds it are filtered before selection. What happens when **every** candidate exceeds it is controlled by `X-OmniRoute-Budget-Fallback` below.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `X-OmniRoute-Budget-Fallback` | `cheapest` (default, aliases: `cheapest-viable`, `soft`) or `strict` (aliases: `block`, `hard`)                                                                                         | `cheapest`: falls back to the globally cheapest candidate even though it still exceeds the cap (legacy behavior). `strict`: refuses to select — the request fails fast with `HTTP 402` instead of silently overspending. Unknown values are ignored.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `X-OmniRoute-Effort`          | `auto` (other values reserved)                                                                                                                                                          | Adaptive thinking budget: when the request carries **no** reasoning field of any shape (`reasoning_effort`, `reasoning`, `thinking`), the gateway resolves `auto` to `low`/`medium`/`high` from deterministic request-shape signals (last-user-message length, context size up to the last user message, prior tool results, tool-loop depth). Signals are scoped to the current turn — everything after the last user message is ignored — so every request in a tool loop resolves to the same level (stateless per-turn pin, no session state, no mid-loop escalation that would break upstream prompt-cache prefixes). An explicit client reasoning field always wins. Scoped to requests whose upstream dispatch resolves to the OpenAI Chat Completions shape (`targetFormat === FORMATS.OPENAI`) — `reasoning_effort` is an OpenAI-shaped field, so the header is a no-op on a Claude- or Gemini-targeted request (see `open-sse/handlers/chatCore/adaptiveEffortWiring.ts`). |
 
 ```bash
 # Force the fastest profile, cap this request at $0.05, and hard-block instead of overspending
@@ -281,7 +282,7 @@ OmniRoute's combo engine supports **19 routing strategies** (declared in `src/sh
 | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `priority`          | First-target ordered list with explicit priority                                                                                                                                          |
 | `weighted`          | Weighted random by per-target weight                                                                                                                                                      |
-| `round-robin`       | Cycle through targets in order                                                                                                                                                            |
+| `round-robin`       | Cycle through targets in order (batched; see below)                                                                                                                                       |
 | `context-relay`     | Hand off context across targets (long conversations)                                                                                                                                      |
 | `fill-first`        | Fill each target's quota before moving to next                                                                                                                                            |
 | `p2c`               | Power-of-2-choices random load balancing                                                                                                                                                  |
@@ -320,6 +321,55 @@ OmniRoute's combo engine supports **19 routing strategies** (declared in `src/sh
 
 For strict rotation use `round-robin`; equal weights on `weighted` give statistical — not
 strict — balance.
+
+### Agentic pipeline mode
+
+A two-step `pipeline` combo can opt into planner/executor routing with
+`config.agenticOrchestration.enabled`. The first target owns planning and final answers;
+the second target emits client-native tool calls. OmniRoute detects tool-result
+continuations from the request protocol, asks the planner whether another tool round is
+needed, and dynamically makes either the executor or planner the client-facing final
+step.
+
+```json
+{
+  "strategy": "pipeline",
+  "models": [{ "model": "provider/planner" }, { "model": "provider/executor" }],
+  "config": {
+    "agenticOrchestration": { "enabled": true, "maxToolRounds": 8 }
+  }
+}
+```
+
+The executor may emit multiple independent calls in one response. Dependent calls are
+handled in later client tool-result turns, with the planner reviewing every result.
+`maxToolRounds` defaults to `8` and accepts `1`–`32`; once reached, the planner must
+produce the best available final answer. Internal planner decisions are buffered, while
+the selected client-facing response preserves the original streaming preference.
+
+### `round-robin` sticky batch and account expansion
+
+Round-robin is batched, not one-request-per-step:
+
+- `stickyRoundRobinLimit` (combo config, then `comboStickyRoundRobinLimit`, then
+  `settings.stickyRoundRobinLimit`, default **3**) keeps the same target for that many
+  consecutive successes before rotating. Set the combo override to `1` for one-request
+  rotation. The combo editor shows the effective value and which layer it came from.
+- `connectionAwareExpansion` (combo config, then settings, default **false**) expands
+  each provider-level step into per-account targets before rotation. Group-B strategies
+  (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp,
+  fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion,
+  pipeline) keep a provider-level view until this is on. The combo editor exposes
+  inherit / on / off; inherit uses the global default (off).
+- Prompt-cache locality routing (`promptCacheAffinityEnabled`, default **true**) reorders
+  pinned connections so matching cache keys stay on one account. It takes precedence over
+  round-robin and weighted rotation across pinned per-account steps. Turn it off under
+  Settings → Combo defaults if you need strict rotation. There is no per-combo override.
+
+For multi-account rotation on one model, prefer **one dynamic-account step** (empty
+`connectionId`, whole pool) with sticky limit `1`, not three pinned `connectionId`s.
+Pinned steps plus affinity collapse onto the same account even while the RR counter
+advances.
 
 ## Fusion Strategy
 

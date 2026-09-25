@@ -49,6 +49,9 @@ import { getKiroUsage, buildKiroUsageResult, discoverKiroProfileArn } from "./us
 export { buildKiroUsageResult, discoverKiroProfileArn } from "./usage/kiro.ts";
 import { getAdobeFireflyUsage } from "./usage/adobeFirefly.ts";
 import { getOpenrouterUsage } from "./usage/openrouter.ts";
+import { getOpenAiCompatibleUsage } from "./usage/openaiCompatible.ts";
+import { getLlmgatewayUsage } from "./usage/llmgateway.ts";
+import { getLyceumUsage } from "./usage/lyceum.ts";
 import { getOllamaCloudUsage } from "./opencodeOllamaUsage.ts";
 import { getCodeBuddyCnUsage } from "./usage/codebuddy-cn.ts";
 import { getPromptQlUsage } from "./usage/promptql.ts";
@@ -62,7 +65,10 @@ export { parseQoderUserStatusUsage } from "./usage/qoder.ts";
 import { getOpencodeUsage } from "./usage/opencode.ts";
 import { getDeepseekUsage } from "./usage/deepseek.ts";
 import { getMoonshotOpenPlatformUsage } from "./moonshotQuotaFetcher.ts";
-import { isMoonshotOpenPlatformConnection } from "./usage/moonshotOpenPlatform.ts";
+import {
+  isKimiCodingConnection,
+  isMoonshotOpenPlatformConnection,
+} from "./usage/moonshotOpenPlatform.ts";
 import { getDevinCliUsage } from "./usage/devinCli.ts";
 import { getBailianCodingPlanUsage } from "./usage/bailian.ts";
 import { getVertexUsage } from "./usage/vertex.ts";
@@ -71,6 +77,7 @@ import { getXaiUsage } from "./usage/xai.ts";
 import { getXaiOauthUsage } from "./usage/xaiOauth.ts";
 import { getGrokCliUsage } from "./usage/grokCli.ts";
 import { getFirecrawlUsage } from "./usage/firecrawl.ts";
+import { getContext7Usage } from "./usage/context7.ts";
 import { getVolcenginePlanUsage } from "./usage/volcenginePlan.ts";
 import { getCommandCodeUsage } from "./usage/command-code.ts";
 import { getQwenTokenPlanUsage } from "./usage/qwen-token-plan.ts";
@@ -113,8 +120,21 @@ export async function getUsageForProvider(
 ) {
   const { id, provider, accessToken, apiKey, providerSpecificData, projectId, email } = connection;
 
+  if (isKimiCodingConnection(connection)) {
+    return await getKimiUsage(accessToken, apiKey, providerSpecificData);
+  }
+
   if (isMoonshotOpenPlatformConnection(connection)) {
     return await getMoonshotOpenPlatformUsage(connection);
+  }
+
+  // openai-compatible-* ids are generated per connection, so they can never
+  // appear in the switch below or in USAGE_FETCHER_PROVIDERS. The connection
+  // itself declares where its quota lives (#13616); without that declaration
+  // this returns a message and the sync treats it as "nothing to show", exactly
+  // as it did before.
+  if (typeof provider === "string" && provider.startsWith("openai-compatible-")) {
+    return await getOpenAiCompatibleUsage(apiKey, providerSpecificData);
   }
 
   switch (provider) {
@@ -179,6 +199,10 @@ export async function getUsageForProvider(
       return await getMoonshotOpenPlatformUsage(connection);
     case "openrouter":
       return await getOpenrouterUsage(id || "", apiKey || "", providerSpecificData);
+    case "llmgateway":
+      return await getLlmgatewayUsage(id || "", apiKey || "");
+    case "lyceum":
+      return await getLyceumUsage(id || "", apiKey || "");
     case "opencode":
     case "opencode-zen":
       return await getOpencodeUsage(id || "", apiKey || "");
@@ -206,6 +230,8 @@ export async function getUsageForProvider(
       return await getHyperAgentUsage(apiKey || accessToken, providerSpecificData);
     case "firecrawl":
       return await getFirecrawlUsage(id || "", apiKey, connection);
+    case "context7":
+      return await getContext7Usage(id || "", apiKey, connection);
     case "volcengine-agent-plan":
     case "volcengine-coding-plan":
       return await getVolcenginePlanUsage(apiKey || "", provider, providerSpecificData);
@@ -251,6 +277,7 @@ export const __testing = {
   getXaiUsage,
   getXaiOauthUsage,
   getFirecrawlUsage,
+  getContext7Usage,
   getCommandCodeUsage,
   getVertexUsage,
   getMiniMaxAuthErrorMessage,

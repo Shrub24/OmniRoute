@@ -1,24 +1,8 @@
-/**
- * Alias → provider-id resolution, extracted from `services/model.ts` so that
- * client components can label routing targets without importing the whole
- * router.
- *
- * `model.ts` reaches `@/lib/db/readCache` through two dynamic imports, which
- * drags the DB layer — and, via `webCookie.ts` → `zai-web.ts` →
- * `cursorImages.ts`, `sharp` and the `detect-libc` node builtins — into any
- * client bundle that imports it. Webpack then fails the client compile with
- * "Module not found: Can't resolve 'child_process'" (#13283 pulled
- * `resolveProviderAlias` into the client-side `lib/combos/controlCenter.ts`).
- *
- * This module depends only on the provider catalogue, which is already part of
- * the client graph. Keep it import-free otherwise — every import added here
- * re-opens the leak above.
- */
 import { PROVIDER_ID_TO_ALIAS } from "../config/providerModels.ts";
 
 // Derive alias→provider mapping from the single source of truth (PROVIDER_ID_TO_ALIAS)
 // This prevents the two maps from drifting out of sync
-const ALIAS_TO_PROVIDER_ID: Record<string, string> = {};
+export const ALIAS_TO_PROVIDER_ID: Record<string, string> = {};
 for (const [id, alias] of Object.entries(PROVIDER_ID_TO_ALIAS)) {
   if (ALIAS_TO_PROVIDER_ID[alias]) {
     console.log(
@@ -47,8 +31,6 @@ ALIAS_TO_PROVIDER_ID["agy"] = "antigravity";
 // The canonical provider ID is "amazon-q". Register it so parseModel("aq/<model>")
 // resolves provider = "amazon-q" instead of falling through to the identity fallback.
 ALIAS_TO_PROVIDER_ID["aq"] = "amazon-q";
-
-export { ALIAS_TO_PROVIDER_ID };
 
 /**
  * Resolve provider alias to provider ID

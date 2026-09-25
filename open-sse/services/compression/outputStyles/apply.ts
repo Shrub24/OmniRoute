@@ -1,4 +1,9 @@
-import { SHARED_BOUNDARIES, shouldBypassCavemanOutputMode } from "../outputMode.ts";
+import {
+  placeSystemInstruction,
+  SHARED_BOUNDARIES,
+  shouldBypassCavemanOutputMode,
+  systemFieldIncludesMarker,
+} from "../outputMode.ts";
 import { detectCompressionLanguage } from "../languageDetector.ts";
 import { OUTPUT_STYLE_IDS, outputStyleMeta } from "./catalog.ts";
 
@@ -29,7 +34,6 @@ export interface OutputStylesResult {
   /** The styles actually injected (after unknown/locale filtering), in catalog order. */
   appliedStyles?: OutputStyleSelectionEntry[];
 }
-
 
 interface OutputStyleLanguageConfig {
   enabled?: boolean;
@@ -100,10 +104,7 @@ function resolveStyles(
 }
 
 /** Build the combined instruction body (no marker, no trailing boundary). Pure / deterministic. */
-function buildStyleInstructions(
-  resolved: OutputStyleSelectionEntry[],
-  language: string
-): string {
+function buildStyleInstructions(resolved: OutputStyleSelectionEntry[], language: string): string {
   const parts: string[] = [];
   for (const { id, level } of resolved) {
     const meta = outputStyleMeta(id);
@@ -121,11 +122,13 @@ function buildStyleInstructions(
  * - SHARED_BOUNDARIES applied once at the end (not per style).
  * - Single idempotency marker; re-applying is a no-op.
  * - Content bypass runs once across the whole turn (all-or-nothing); reason recorded.
+ *   `options.autoClarity: false` (the Auto-Clarity Bypass toggle) skips it.
  */
 export function applyOutputStyles(
   body: ChatRequestBody,
   selection: OutputStyleSelectionEntry[],
-  language = "en"
+  language = "en",
+  options: { autoClarity?: boolean } = {}
 ): OutputStylesResult {
   const resolved = resolveStyles(selection ?? [], language);
   if (resolved.length === 0) {
@@ -150,32 +153,37 @@ export function applyOutputStyles(
       };
     }
     if (typeof body.input === "string" || Array.isArray(body.input)) {
-      return { body: { ...body, instructions: instruction }, applied: true, appliedStyles: resolved };
+      return {
+        body: { ...body, instructions: instruction },
+        applied: true,
+        appliedStyles: resolved,
+      };
     }
     return { body, applied: false, skippedReason: "no_messages" };
   }
 
   // Idempotency before bypass so an already-injected marker (which contains
   // SHARED_BOUNDARIES keywords) cannot trigger a false-positive bypass.
-  const alreadyApplied = messages.some(
-    (message) =>
-      message.role === "system" &&
-      typeof message.content === "string" &&
-      message.content.includes(OUTPUT_STYLE_MARKER)
-  );
+  const alreadyApplied =
+    systemFieldIncludesMarker(body.system, OUTPUT_STYLE_MARKER) ||
+    messages.some(
+      (message) =>
+        message.role === "system" &&
+        typeof message.content === "string" &&
+        message.content.includes(OUTPUT_STYLE_MARKER)
+    );
   if (alreadyApplied) return { body, applied: false, skippedReason: "already_applied" };
 
-  // Content bypass (all-or-nothing for the turn): reuse the existing rules verbatim.
-  const bypass = shouldBypassCavemanOutputMode(messages);
-  if (bypass) return { body, applied: false, skippedReason: bypass };
-
-  const nextMessages = [...messages];
-  const first = nextMessages[0];
-  if (first?.role === "system" && typeof first.content === "string") {
-    nextMessages[0] = { ...first, content: `${first.content.trim()}\n\n${instruction}` };
-  } else {
-    nextMessages.unshift({ role: "system", content: instruction });
+  // Content bypass (all-or-nothing for the turn): reuse the existing rules verbatim,
+  // gated on the Auto-Clarity toggle the same way applyCavemanOutputMode gates it.
+  if (options.autoClarity !== false) {
+    const bypass = shouldBypassCavemanOutputMode(messages);
+    if (bypass) return { body, applied: false, skippedReason: bypass };
   }
 
-  return { body: { ...body, messages: nextMessages }, applied: true, appliedStyles: resolved };
+  return {
+    body: { ...body, ...placeSystemInstruction(messages, body.system, instruction) },
+    applied: true,
+    appliedStyles: resolved,
+  };
 }
