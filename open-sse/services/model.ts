@@ -1,13 +1,10 @@
 import { PROVIDER_ID_TO_ALIAS, PROVIDER_MODELS } from "../config/providerModels.ts";
-import { ALIAS_TO_PROVIDER_ID, resolveProviderAlias } from "./providerAlias.ts";
-import { resolveWildcardAlias } from "./wildcardRouter.ts";
-import { getRegisteredProviderEffortBaseModelId } from "../utils/registeredEffortVariants.ts";
 // Lives in its own module so client components can resolve aliases without
 // pulling this router (and its `@/lib/db/readCache` imports) into the browser
 // bundle. See services/providerAlias.ts.
 import { ALIAS_TO_PROVIDER_ID, resolveProviderAlias } from "./providerAlias.ts";
-
-export { resolveProviderAlias };
+import { resolveWildcardAlias } from "./wildcardRouter.ts";
+import { getRegisteredProviderEffortBaseModelId } from "../utils/registeredEffortVariants.ts";
 
 export { resolveProviderAlias };
 
