@@ -70,19 +70,11 @@ export const GLM_53_FAMILY_PATTERN = /(?:^|\/|\b)glm-5\.3(?:$|-)/i;
 export const GLM_52_FAMILY_PATTERN = /(?:^|\/|\b)glm-5\.2(?:$|-)/i;
 
 export function isCommandCodeProvider(provider: string): boolean {
-  return (
-    provider === "command-code" ||
-    provider === "cmd" ||
-    provider === "command_code"
-  );
+  return provider === "command-code" || provider === "cmd" || provider === "command_code";
 }
 
 export function isOllamaCloudProvider(provider: string): boolean {
-  return (
-    provider === "ollama-cloud" ||
-    provider === "ollamacloud" ||
-    provider === "ollama_cloud"
-  );
+  return provider === "ollama-cloud" || provider === "ollamacloud" || provider === "ollama_cloud";
 }
 
 export function isOpencodeGoProvider(provider: string): boolean {
@@ -206,12 +198,7 @@ export function supportsMaxEffortForProvider(provider: string, model: string): b
     MAX_TIER_REASONING_MODEL_PATTERN.test(resolvedModelId) ||
     MAX_TIER_REASONING_MODEL_PATTERN.test(model);
   return (
-    isClaude ||
-    isOpencodeGo ||
-    isOllamaCloud ||
-    isMoonshotK3 ||
-    isCommandCode ||
-    isMaxTierModel
+    isClaude || isOpencodeGo || isOllamaCloud || isMoonshotK3 || isCommandCode || isMaxTierModel
   );
 }
 
@@ -476,6 +463,43 @@ export function sanitizeReasoningEffortForProvider(
     return writeEffortValue(b, "low", c);
   }
 
+  // ── explicit per-model capability clamp ──────────────────────────────────
+  // When the registry declares supportedThinkingEfforts for this exact model
+  // and the requested effort falls outside that vocabulary, remap to the
+  // nearest declared tier: the smallest ranked value ≥ the request, else the
+  // highest declared (a request above the ceiling lands on the ceiling).
+  //
+  // Sits BEFORE the provider-wide isMaxTierTarget xhigh → max rewrite below:
+  // a declared vocabulary is model-specific truth and must win over the
+  // provider-wide default. Without this ordering, opencode-go MiMo
+  // (mimo-v2.6-*, gateway accepts exactly low|medium|high — oh-my-pi #2864)
+  // got xhigh → max short-circuited here and 400'd upstream at any tier above
+  // high. Models without a declaration reach the provider-wide block exactly
+  // as before. Family patterns (GLM/Muse/Grok/…) above still take precedence
+  // — they own `none`/`minimal` semantics no registry entry expresses.
+  const providerModelIdForClamp = modelStr.startsWith(`${provider}/`)
+    ? modelStr.slice(provider.length + 1)
+    : modelStr;
+  const declaredEfforts = getProviderModels(provider).find(
+    (entry) =>
+      entry.id === providerModelIdForClamp || entry.aliases?.includes(providerModelIdForClamp)
+  )?.supportedThinkingEfforts;
+  const declaredRanked = (Array.isArray(declaredEfforts) ? declaredEfforts : [])
+    .map((tier) => ({ tier, rank: REASONING_EFFORT_ORDER.indexOf(tier) }))
+    .filter((x) => x.rank >= 0)
+    .sort((a, b) => a.rank - b.rank);
+  if (declaredRanked.length > 0 && !declaredEfforts!.includes(effortStr)) {
+    const requestedRank = REASONING_EFFORT_ORDER.indexOf(effortStr);
+    const nearest =
+      declaredRanked.find((x) => x.rank >= requestedRank) ??
+      declaredRanked[declaredRanked.length - 1];
+    log?.info?.(
+      "REASONING_SANITIZE",
+      `${provider}/${modelStr}: mapped reasoning_effort ${effortStr} → ${nearest.tier} (model accepts ${declaredEfforts!.join("/")})`
+    );
+    return writeEffortValue(b, nearest.tier, c);
+  }
+
   // Providers and model families whose top reasoning tier is `max` natively
   // (or whose gateways expect `max` rather than OmniRoute's internal `xhigh`):
   //   - Command Code (`command-code` / `cmd`)
@@ -527,7 +551,8 @@ export function sanitizeReasoningEffortForProvider(
   // Sits AFTER the per-provider early returns by design: deepseek/command-code/
   // ollama-cloud have deliberate static translations that take precedence; the
   // learned set governs every other provider and all effort values, before the
-  // xhigh/max static fallbacks below.
+  // xhigh/max static fallbacks below. Models with a declared registry
+  // vocabulary already returned above — static declaration beats learned.
   const learnedSet = getLearnedReasoningEffort(provider, modelStr);
   if (learnedSet && learnedSet.size > 0 && !learnedSet.has(effortStr)) {
     const clamped = clampToLearned(effortStr, learnedSet);
@@ -538,35 +563,6 @@ export function sanitizeReasoningEffortForProvider(
       );
       return writeEffortValue(b, clamped, c);
     }
-  }
-
-  // ── explicit per-model capability clamp ──────────────────────────────────
-  // When the registry declares supportedThinkingEfforts for this exact model
-  // and the requested effort falls outside that vocabulary, remap to the
-  // nearest declared tier: the smallest ranked value ≥ the request, else the
-  // highest declared (a request above the ceiling lands on the ceiling).
-  const providerModelIdForClamp = modelStr.startsWith(`${provider}/`)
-    ? modelStr.slice(provider.length + 1)
-    : modelStr;
-  const declaredEfforts = getProviderModels(provider).find(
-    (entry) => entry.id === providerModelIdForClamp || entry.aliases?.includes(providerModelIdForClamp)
-  )?.supportedThinkingEfforts;
-  const declaredRanked = (
-    Array.isArray(declaredEfforts) ? declaredEfforts : []
-  )
-    .map((tier) => ({ tier, rank: REASONING_EFFORT_ORDER.indexOf(tier) }))
-    .filter((x) => x.rank >= 0)
-    .sort((a, b) => a.rank - b.rank);
-  if (declaredRanked.length > 0 && !declaredEfforts!.includes(effortStr)) {
-    const requestedRank = REASONING_EFFORT_ORDER.indexOf(effortStr);
-    const nearest =
-      declaredRanked.find((x) => x.rank >= requestedRank) ??
-      declaredRanked[declaredRanked.length - 1];
-    log?.info?.(
-      "REASONING_SANITIZE",
-      `${provider}/${modelStr}: mapped reasoning_effort ${effortStr} → ${nearest.tier} (model accepts ${declaredEfforts!.join("/")})`
-    );
-    return writeEffortValue(b, nearest.tier, c);
   }
 
   const supportsXHigh = supportsXHighEffort(provider, modelStr);

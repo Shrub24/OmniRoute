@@ -52,6 +52,28 @@ export const opencode_goProvider: RegistryEntry = {
     },
     { id: "mimo-v2.5-high", name: "MiMo-V2.5 (high effort)", supportsReasoning: true },
     { id: "mimo-v2.5-max", name: "MiMo-V2.5 (max effort)", supportsReasoning: true },
+    // MiMo-V2.6 — released 2026-09-22. The go gateway validates reasoning_effort
+    // as a pydantic literal of exactly low|medium|high for the MiMo family
+    // (verified live: xhigh/max -> 400 Invalid request parameters;
+    // low/medium/high -> 200; cf. oh-my-pi #2864). Without this declaration the
+    // provider-wide xhigh -> max rewrite fired and every high+ request 400'd.
+    // context/output limits from models.dev (opencode-go/mimo-v2.6-*).
+    {
+      id: "mimo-v2.6-pro",
+      name: "MiMo-V2.6-Pro",
+      supportsReasoning: true,
+      supportedThinkingEfforts: ["low", "medium", "high"],
+      contextLength: 1048576,
+      maxOutputTokens: 131072,
+    },
+    {
+      id: "mimo-v2.6-flash",
+      name: "MiMo-V2.6-Flash",
+      supportsReasoning: true,
+      supportedThinkingEfforts: ["low", "medium", "high"],
+      contextLength: 1048576,
+      maxOutputTokens: 131072,
+    },
     // #3110: MiniMax M3 via OpenCode Go tier
     {
       id: "minimax-m3",
