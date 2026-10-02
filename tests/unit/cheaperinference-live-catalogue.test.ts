@@ -25,7 +25,7 @@ const providersDb = await import("../../src/lib/db/providers.ts");
 const modelsDb = await import("../../src/lib/db/models.ts");
 const modelDiscovery = await import("../../src/lib/providerModels/modelDiscovery.ts");
 const { getModelInfo } = await import("../../src/sse/services/model.ts");
-const { PROVIDER_MODELS_CONFIG, parseCheaperInferenceTextModels } =
+const { PROVIDER_MODELS_CONFIG } =
   await import("../../src/app/api/providers/[id]/models/discovery/providerModelsConfig.ts");
 const { resolveChatCoreTargetFormat } =
   await import("../../open-sse/handlers/chatCore/targetFormat.ts");
