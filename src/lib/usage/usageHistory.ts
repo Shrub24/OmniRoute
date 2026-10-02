@@ -328,11 +328,18 @@ export function trackPendingRequest(
   provider: string,
   connectionId: string | null,
   started: boolean,
-  metadata?: PendingRequestMetadata
+  metadata?: PendingRequestMetadata,
+  pendingRequestId?: string
 ) {
   const modelKey = provider ? `${model} (${provider})` : model;
   if (!isSafeKey(modelKey)) return;
   const normalizedMetadata = normalizePendingMetadata(metadata);
+  // An id that is no longer listed was already withdrawn (completion and
+  // disconnect both end the same request): leave every counter untouched.
+  if (!started && pendingRequestId && connectionId) {
+    const listed = pendingRequests.details[connectionId]?.[modelKey];
+    if (!listed?.some((entry) => entry.id === pendingRequestId)) return;
+  }
 
   // Ensure the orphaned-pending reaper is running once pending tracking is in use.
   if (started) ensurePendingSweepTimer();
@@ -403,7 +410,14 @@ export function trackPendingRequest(
       }
       return newDetail.id;
     } else if (!started && nextCount >= 0) {
-      if (pendingRequests.details[connectionId]?.[modelKey]?.length) {
+      if (pendingRequestId) {
+        const bucket = pendingRequests.details[connectionId][modelKey];
+        const [removed] = bucket.splice(
+          bucket.findIndex((entry) => entry.id === pendingRequestId),
+          1
+        );
+        if (removed) pendingById.delete(removed.id);
+      } else if (pendingRequests.details[connectionId]?.[modelKey]?.length) {
         const removed = pendingRequests.details[connectionId][modelKey].shift();
         if (removed) pendingById.delete(removed.id);
       }
@@ -976,6 +990,7 @@ export async function getModelLatencyStats(
     latency_ms: number | null;
     ttft_ms: number | null;
     tokens_output: number | null;
+    tokens_reasoning: number | null;
   };
 
   const conditions = ["timestamp >= @sinceIso", "provider IS NOT NULL", "model IS NOT NULL"];
@@ -992,7 +1007,7 @@ export async function getModelLatencyStats(
   const rows = db
     .prepare(
       `
-      SELECT provider, model, success, latency_ms, ttft_ms, tokens_output
+      SELECT provider, model, success, latency_ms, ttft_ms, tokens_output, tokens_reasoning
       FROM usage_history
       WHERE ${conditions.join(" AND ")}
       ORDER BY timestamp DESC
@@ -1022,7 +1037,8 @@ export async function getModelLatencyStats(
       toNumber(row.latency_ms),
       toNumber(row.ttft_ms),
       toNumber(row.tokens_output),
-      isSuccess
+      isSuccess,
+      toNumber(row.tokens_reasoning)
     );
   }
 

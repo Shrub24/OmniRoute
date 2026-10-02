@@ -23,7 +23,11 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // the next credential for a bounded empty-turn retry. The retry dispatches through
     // executeProviderRequest(), whose assertManagedLeaseFence(attemptConnectionId) rejects a
     // connection other than the leased one — so it is fenced centrally (class A).
-    "open-sse/handlers/chatCore.ts": 1,
+    // #14914 moved that loop (and its credential rollback) into
+    // chatCore/emptyTurnRetryLoop.ts; chatCore.ts now passes `getProviderCredentials` in
+    // as a dependency (a reference, not a call), so the site is inventoried at its new
+    // home — still dispatched through executeProviderRequest(), still class A.
+    "open-sse/handlers/chatCore/emptyTurnRetryLoop.ts": 1,
     "open-sse/handlers/chatCore/providerExecutionPipeline.ts": 2,
     "open-sse/services/imageCombo.ts": 1,
     "open-sse/services/speechCombo.ts": 1,
@@ -103,6 +107,10 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // streak seeder reads the row's lastErrorType/lastErrorAt so a crash loop
     // cannot reset the backoff count on every boot — a state read, not dispatch.
     "open-sse/handlers/chatCore/requestRejectedFailure.ts": 1,
+    // #14958: after a successful search the proxy re-reads the connection row it
+    // just used so clearAccountError() can wipe a stale lastError/testStatus — a
+    // post-dispatch state read, not connection selection, so it stays class C.
+    "open-sse/handlers/search/searchProxy.ts": 1,
     // v3.8.50 back-merge additions (f95b03d7): combo routing infra and the
     // volcengine-plan binding/auto-sync services query connections the same
     // way as their classified siblings.
@@ -118,6 +126,11 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     "src/app/api/cloud/auth/route.ts": 1,
     "src/app/api/cloud/credentials/update/route.ts": 1,
     "src/app/api/models/route.ts": 1,
+    // #13487 (61198da9e): Test-all reads the provider's rows once only to reject
+    // with 409 when every connection is disabled — a state read behind the
+    // management route; the per-model probes it dispatches still go through the
+    // fenced chat pipeline, so it never selects a connection itself (class C).
+    "src/app/api/models/test-all/route.ts": 1,
     "src/app/api/monitoring/health/route.ts": 1,
     "src/app/api/oauth/[provider]/[action]/route.ts": 4,
     "src/app/api/oauth/codex/import/route.ts": 1,
@@ -129,6 +142,10 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     "src/app/api/provider-nodes/[id]/route.ts": 1,
     "src/app/api/providers/[id]/chatgpt-web-codex-doctor/route.ts": 1,
     "src/app/api/providers/[id]/refresh-token/route.ts": 1,
+    // #15130: the connection test re-reads the row uncached right before its write so an
+    // operator disable that landed mid-probe is honored — a state re-read of the connection
+    // under test, never a connection selection (class C).
+    "src/app/api/providers/[id]/test/route.ts": 1,
     "src/app/api/providers/bulk/route.ts": 1,
     "src/app/api/providers/client/route.ts": 1,
     "src/app/api/providers/free-onboarding/route.ts": 2,
@@ -136,7 +153,9 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // Base drift (already present before #11754 boarded, from earlier-merged
     // #11698/#11720 retirement PRs): a third getProviderConnections-family
     // call site landed here without a golden-inventory update at the time.
-    "src/app/api/providers/route.ts": 3,
+    // +1: bulk PATCH reads the row to carry the operator-disable marker in
+    // providerSpecificData next to isActive — a state read, not dispatch.
+    "src/app/api/providers/route.ts": 4,
     "src/app/api/providers/test-batch/route.ts": 2,
     "src/app/api/rate-limits/route.ts": 1,
     "src/app/api/services/dario/admin/import-from-omniroute/route.ts": 2,
@@ -176,6 +195,10 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     "src/lib/freeProviderRankings.ts": 1,
     "src/lib/guardrails/visionBridgeCredentials.ts": 2,
     "src/lib/kimi/tokenRefresh.ts": 1,
+    // Test&Add re-reads selected credentials behind the canonical auxiliary lease
+    // guard. Class B: FREE lease-capable connections remain usable; ACTIVE leases
+    // block the fresh lookup and every physical dispatch (behavioral runner/service tests).
+    "src/lib/modelValidation/runner.ts": 1,
     "src/lib/monitoring/providerHealthAutopilot.ts": 1,
     "src/lib/monitoring/providerHealthMatrix.ts": 1,
     "src/lib/oauth/connectionPersistence.ts": 1,
@@ -225,7 +248,7 @@ const CLASSIFICATION: Record<InventoryKind, Record<string, BypassClass>> = {
   credential: Object.fromEntries(
     Object.keys(EXPECTED.credential).map((file) => [
       file,
-      file === "open-sse/handlers/chatCore.ts" ||
+      file === "open-sse/handlers/chatCore/emptyTurnRetryLoop.ts" ||
       file === "src/app/api/v1/session-leases/route.ts" ||
       file === "src/sse/handlers/chat.ts" ||
       file === "src/sse/services/auth.ts"
@@ -255,6 +278,7 @@ const CLASSIFICATION: Record<InventoryKind, Record<string, BypassClass>> = {
         "open-sse/services/tokenRefresh.ts",
         "src/app/api/translator/send/route.ts",
         "src/lib/credentialHealth/scheduler.ts",
+        "src/lib/modelValidation/runner.ts",
         "src/lib/providers/volcPlanAutoSyncBackfill.ts",
         "src/lib/providers/volcenginePlanBinding.ts",
         "src/lib/services/quotaAutoPing.ts",
@@ -367,6 +391,7 @@ test("managed request surfaces are fenced centrally or rejected before independe
     "src/app/api/translator/send/route.ts",
     "src/app/api/translator/translate/route.ts",
     "src/lib/api/modelTestRunner.ts",
+    "src/lib/modelValidation/runner.ts",
     "src/lib/services/quotaAutoPing.ts",
     "src/lib/usage/codexResetCredits.ts",
     "src/lib/usage/glmResetCards.ts",

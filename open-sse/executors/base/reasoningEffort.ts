@@ -260,6 +260,29 @@ function writeEffortValue(
   return next;
 }
 
+/**
+ * The effort the outgoing body actually asks for, across all three carriers.
+ * Used by the reactive 4xx probe in `base.ts` to decide which tier to step
+ * down to, so it must report what is on the wire — not what the registry says
+ * the model supports.
+ */
+export function readBodyReasoningEffort(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const effort = readEffortCarriers(body as Record<string, unknown>).effort;
+  return typeof effort === "string" ? effort : null;
+}
+
+/**
+ * Write `value` onto every carrier the body already uses, leaving the shape of
+ * the body untouched — the reactive probe rewrites one field of the request
+ * that is already on its way upstream, so it must not reshape anything else.
+ */
+export function writeBodyReasoningEffort(body: unknown, value: string): unknown {
+  if (!body || typeof body !== "object") return body;
+  const record = body as Record<string, unknown>;
+  return writeEffortValue(record, value, readEffortCarriers(record));
+}
+
 /** Strip the effort field from every carrier that was present. */
 function stripEffortValue(b: Record<string, unknown>, c: EffortCarriers): Record<string, unknown> {
   const next: Record<string, unknown> = { ...b };
@@ -453,12 +476,26 @@ export function sanitizeReasoningEffortForProvider(
   // Command Code rejects it outright:
   //   Validation error: Invalid option: expected one of
   //   "low"|"medium"|"high"|"xhigh"|"max" at "params.reasoning_effort"
-  // Map it to the closest supported value (`low`) for command-code only;
+  // Command Code rejects the OpenAI no-thinking carrier `none` with the same
+  // error. That matters because a `force` + `none` reasoning-routing rule now
+  // emits `reasoning_effort: "none"` (src/lib/reasoningRouting/policy.ts) so
+  // that providers whose thinking defaults ON actually turn it off.
+  // Map both to the closest supported value (`low`) for command-code only;
   // other providers (codex etc.) keep their native `minimal` handling.
-  if (isCommandCodeProvider(provider) && effortStr === "minimal") {
+  // Exception: a Responses-shaped body (`input`, no `messages`) is routed to
+  // /provider/v1/responses (#14692), which DOES honor `reasoning.effort: "none"`
+  // (verified live 2026-09-24: reasoning_tokens 0) — keep `none` there, or a
+  // no-thinking request silently turns reasoning back on.
+  const commandCodeResponsesNone =
+    effortStr === "none" && b.input !== undefined && b.messages === undefined;
+  if (
+    isCommandCodeProvider(provider) &&
+    (effortStr === "minimal" || effortStr === "none") &&
+    !commandCodeResponsesNone
+  ) {
     log?.info?.(
       "REASONING_SANITIZE",
-      `${provider}/${modelStr}: mapped reasoning_effort minimal → low`
+      `${provider}/${modelStr}: mapped reasoning_effort ${effortStr} → low`
     );
     return writeEffortValue(b, "low", c);
   }
@@ -502,17 +539,23 @@ export function sanitizeReasoningEffortForProvider(
 
   // Providers and model families whose top reasoning tier is `max` natively
   // (or whose gateways expect `max` rather than OmniRoute's internal `xhigh`):
-  //   - Command Code (`command-code` / `cmd`)
   //   - Ollama Cloud (`ollama-cloud` / `ollamacloud`)
   //   - OpenCode Go (`opencode-go` / `opencode-zen` / `opencode`)
   //   - GLM 5.1+ / 6.0+ (Z.AI / Zhipu GLM-5.1, GLM-5.2, GLM-5.3, GLM-5.4...)
   //   - DeepSeek V4+ (Flash, Pro, Vision, ...)
   //   - Kimi K3+ (Moonshot AI K3, K4, ...)
   // OpenRouter (pi#4055) is excluded because OpenRouter's normalized API expects xhigh.
+  //
+  // Command Code is deliberately NOT in this list. Its own validator advertises
+  // `low|medium|high|xhigh|max` (the quoted enum in the `minimal` mapping above),
+  // so `xhigh` is a native and distinct tier there. Rewriting it onto `max`
+  // silently spends a different reasoning level than the caller asked for, and it
+  // also overwrote the nested `reasoning.effort` carrier that the Responses path
+  // reads. Unlisted models already pass `xhigh` through unchanged below via
+  // supportsXHighEffort(); this early return used to preempt that.
   const isMaxTierTarget =
     provider !== "openrouter" &&
-    (isCommandCodeProvider(provider) ||
-      isOllamaCloudProvider(provider) ||
+    (isOllamaCloudProvider(provider) ||
       isOpencodeGoProvider(provider) ||
       MAX_TIER_REASONING_MODEL_PATTERN.test(modelStr));
 

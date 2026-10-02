@@ -19,7 +19,10 @@ import {
 import { classifyStampedPeerLocality } from "@/server/authz/peerStamp";
 import { classifyHostLocality } from "@/server/authz/routeGuard";
 import { isPublicApiRoute } from "@/shared/constants/publicApiRoutes";
-import { verifyDashboardSessionToken } from "@/shared/utils/dashboardSessionToken";
+import {
+  verifyDashboardSessionToken,
+  DASHBOARD_SESSION_COOKIE,
+} from "@/shared/utils/dashboardSessionToken";
 import { extractApiKey } from "@/sse/services/auth";
 
 type RequestLike = {
@@ -44,6 +47,13 @@ export interface AuthRequiredOptions {
    * pipeline's own locality header could still be present.
    */
   loopback?: boolean;
+  /**
+   * Judge a public-classified path as if it were a management path. A public route
+   * that does its own management check (`requireManagementAuth`) must not inherit the
+   * "public, no auth needed" shortcut of the fresh-install window, or a remote caller
+   * passes the check before a password exists.
+   */
+  ignorePublicRoute?: boolean;
 }
 
 export function hasConfiguredPassword(settings: Record<string, unknown>): boolean {
@@ -189,40 +199,51 @@ function getSocketPeerAddress(request: RequestLike | Request | null | undefined)
  * `src/server/authz/peerContext.ts::isLoopbackRequest`.
  */
 export function isLoopbackRequest(request: RequestLike | Request | null | undefined): boolean {
-  if (!request || typeof request !== "object") return false;
+  return getRequestPeerLocality(request) === "loopback";
+}
+
+/**
+ * Trusted three-way locality of the caller — the same signals and order as
+ * `isLoopbackRequest()` above, but keeping the LAN verdict so route handlers can apply
+ * the LOCAL_ONLY semantics (loopback OR private LAN, never via a reverse proxy) to a
+ * single capability inside a route that stays reachable remotely. Fails closed to
+ * "remote".
+ */
+export function getRequestPeerLocality(
+  request: RequestLike | Request | null | undefined
+): "loopback" | "lan" | "remote" {
+  if (!request || typeof request !== "object") return "remote";
 
   const stampToken = process.env.OMNIROUTE_PEER_STAMP_TOKEN;
 
   const stampedPeer = getHeaderValue(request, PEER_IP_HEADER);
   if (stampedPeer !== null) {
-    return (
-      classifyStampedPeerLocality(
-        stampedPeer,
-        getHeaderValue(request, VIA_PROXY_HEADER),
-        stampToken
-      ) === "loopback"
+    return classifyStampedPeerLocality(
+      stampedPeer,
+      getHeaderValue(request, VIA_PROXY_HEADER),
+      stampToken
     );
   }
 
   const pipelineVerdict = getHeaderValue(request, AUTHZ_HEADER_PEER_LOCALITY);
   if (pipelineVerdict !== null && stampToken) {
-    return pipelineVerdict === "loopback";
+    return pipelineVerdict === "loopback" || pipelineVerdict === "lan" ? pipelineVerdict : "remote";
   }
 
   const socketPeer = getSocketPeerAddress(request);
-  if (socketPeer) return classifyHostLocality(socketPeer) === "loopback";
+  if (socketPeer) return classifyHostLocality(socketPeer);
 
   // A stamping server is in front (every supported runtime — run-next dev/start and
   // standalone-server-ws for Docker, the npm CLI and Electron — calls
   // ensurePeerStampToken() at boot) but neither trusted signal is on this request:
   // fail closed. The Host header is never consulted in that process.
-  if (stampToken) return false;
+  if (stampToken) return "remote";
 
   // No stamping server in this process at all: route handlers invoked directly (the
   // unit-test harness) or a raw `next` launch that also bypasses every LOCAL_ONLY
   // gate in peerContext. There is no real peer to read, so keep the historical
   // URL/Host verdict rather than turning every direct handler call into a remote one.
-  return isLegacyHostLoopback(request);
+  return isLegacyHostLoopback(request) ? "loopback" : "remote";
 }
 
 function isLegacyHostLoopback(request: RequestLike | Request): boolean {
@@ -345,21 +366,21 @@ export async function isDashboardSessionAuthenticated(
     request &&
     typeof request === "object" &&
     "cookies" in request &&
-    request.cookies?.get?.("auth_token")?.value
-      ? request.cookies.get("auth_token")?.value || null
+    request.cookies?.get?.(DASHBOARD_SESSION_COOKIE)?.value
+      ? request.cookies.get(DASHBOARD_SESSION_COOKIE)?.value || null
       : null;
 
   const requestHeaders =
     request && typeof request === "object" && "headers" in request ? request.headers : undefined;
 
   if (!token) {
-    token = getCookieValueFromHeader(requestHeaders, "auth_token");
+    token = getCookieValueFromHeader(requestHeaders, DASHBOARD_SESSION_COOKIE);
   }
 
   if (!token) {
     try {
       const cookieStore = await cookies();
-      token = cookieStore.get("auth_token")?.value || null;
+      token = cookieStore.get(DASHBOARD_SESSION_COOKIE)?.value || null;
     } catch {
       token = null;
     }
@@ -463,7 +484,7 @@ export async function isAuthRequired(
         return false;
       }
 
-      if (pathname && isPublicApiRoute(pathname, method)) {
+      if (!options?.ignorePublicRoute && pathname && isPublicApiRoute(pathname, method)) {
         return false;
       }
 

@@ -500,6 +500,10 @@ POST /v1/moderations { "model": "omni-moderation-latest", "input": "..." }
 # TTS — returns audio/mpeg (or requested format) body
 POST /v1/audio/speech { "model": "openai/tts-1", "input": "Hello", "voice": "alloy" }
 
+# Soniox TTS requires a language and a voice: `language` defaults to "en"; a missing
+# voice or an OpenAI stock voice name (alloy, nova, …) becomes "Adrian"
+POST /v1/audio/speech { "model": "soniox/tts-rt-v1", "input": "Xin chào", "voice": "Adrian", "language": "vi" }
+
 # Image edit (multipart)
 POST /v1/images/edits  -F image=@input.png -F prompt="..." -F mask=@mask.png
 
@@ -841,17 +845,18 @@ ordinary inference API keys. Credential families, scopes, and curl examples:
 
 ### Provider Management
 
-| Endpoint                     | Method                | Description                                                                                               |
-| ---------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------- |
-| `/api/providers`             | GET/POST              | List / create providers                                                                                   |
-| `/api/providers/[id]`        | GET/PUT/DELETE        | Manage a provider                                                                                         |
-| `/api/providers/[id]/test`   | POST                  | Test provider connection                                                                                  |
-| `/api/providers/[id]/models` | GET                   | List provider models                                                                                      |
-| `/api/providers/validate`    | POST                  | Validate provider config                                                                                  |
-| `/api/providers/bulk`        | POST                  | Bulk-add API keys for ONE provider                                                                        |
-| `/api/providers/import`      | POST                  | Import a heterogeneous provider LIST from a parsed CSV/JSON file (#6836); per-row partial-failure results |
-| `/api/provider-nodes*`       | Various               | Provider node management                                                                                  |
-| `/api/provider-models`       | GET/POST/PATCH/DELETE | Custom models (add, update, hide/show, delete)                                                            |
+| Endpoint                                | Method                | Description                                                                                                                                               |
+| --------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/providers`                        | GET/POST              | List / create providers                                                                                                                                   |
+| `/api/providers/[id]`                   | GET/PUT/DELETE        | Manage a provider                                                                                                                                         |
+| `/api/providers/[id]/test`              | POST                  | Test provider connection                                                                                                                                  |
+| `/api/providers/[id]/models`            | GET                   | List provider models                                                                                                                                      |
+| `/api/providers/validate`               | POST                  | Validate provider config                                                                                                                                  |
+| `/api/providers/bulk`                   | POST                  | Bulk-add API keys for ONE provider                                                                                                                        |
+| `/api/providers/import`                 | POST                  | Import a heterogeneous provider LIST from a parsed CSV/JSON file (#6836); per-row partial-failure results                                                 |
+| `/api/provider-nodes*`                  | Various               | Provider node management                                                                                                                                  |
+| `/api/provider-models`                  | GET/POST/PATCH/DELETE | Custom models (add, update, hide/show, delete)                                                                                                            |
+| `/api/provider-models/validate-and-add` | POST                  | Management-authenticated, opt-in strict-connection validation and atomic custom-model registration; see [Model validation](../guides/MODEL-VALIDATION.md) |
 
 ### OAuth Flows
 
@@ -1478,7 +1483,7 @@ Returns the public A2A agent card (name, description, capabilities, skill catalo
 | POST | `/api/evals/suites` | Create a custom eval suite — body validated by `evalSuiteSaveSchema` |
 | GET | `/api/evals/suites/[id]` | Retrieve a custom eval suite |
 
-**Auth:** `/api/cloud/auth` validates a Bearer key directly; the other `/api/cloud/*`, `/api/evals/*`, and `/api/assess` routes require management session/API key. `/api/assess` POST uses `validateBody` with a discriminated-union scope schema.
+**Auth:** `/api/cloud/auth` validates a Bearer key directly and returns the masked key and `projectId` of each connection only for a key with the `manage` / `admin` scope; the other `/api/cloud/*`, `/api/evals/*`, and `/api/assess` routes require management session/API key. `/api/assess` POST uses `validateBody` with a discriminated-union scope schema.
 
 ---
 

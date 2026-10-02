@@ -11,7 +11,7 @@ import {
   normalizeCliCompatProviderId,
 } from "@/shared/constants/cliCompatProviders";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
-import { CLAUDE_CODE_CLIENT_BUILD_REVISION } from "@/shared/constants/claudeCodeClient";
+import { getClaudeCodeClientBuildRevision } from "@/shared/constants/claudeCodeClient";
 import { compareTr } from "@/shared/utils/turkishText";
 import { HERMES } from "./systemTransformsHermesDefaults";
 
@@ -170,7 +170,7 @@ const DEFAULT_SYSTEM_TRANSFORMS_CLIENT = {
           entrypoint: "sdk-cli",
           versionFormat: "ex-machina",
           cchAlgo: "sha256-first-user",
-          buildRevision: CLAUDE_CODE_CLIENT_BUILD_REVISION,
+          buildRevision: getClaudeCodeClientBuildRevision(),
         },
       ],
     },

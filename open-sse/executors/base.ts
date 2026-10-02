@@ -26,10 +26,6 @@ import {
   parseThinkingBudgetMax,
 } from "../services/learnedThinkingCaps.ts";
 import {
-  recordLearnedReasoningEffort,
-  parseReasoningEffortEnum,
-} from "../services/learnedReasoningEffortCaps.ts";
-import {
   getParamFilterConfig,
   addParamToBlocklist,
   isAutoLearnGloballyEnabled,
@@ -45,6 +41,7 @@ import {
 } from "../services/openrouterFreeWindow.ts";
 import { gateOutboundRequest } from "../services/wafRateLimit.ts";
 import { ClaudeUsageLimitGuard } from "./claudeUsageLimit.ts";
+import { shouldSkipIntraRetryFor429 } from "./rateLimitIntraRetry.ts";
 import type { PoolConfig } from "../services/sessionPool/types.ts";
 import type { Session } from "../services/sessionPool/session.ts";
 import { SessionPool } from "../services/sessionPool/sessionPool.ts";
@@ -82,7 +79,6 @@ import { obfuscateInBody } from "../services/claudeCodeObfuscation.ts";
 import { sanitizeClaudeToolSchemas } from "../translator/helpers/schemaCoercion.ts";
 import { sanitizeResponsesInputItems } from "../services/responsesInputSanitizer.ts";
 import { applySystemTransformPipeline, PROVIDER_CLAUDE } from "../services/systemTransforms.ts";
-import * as prl from "../utils/providerRequestLogging.ts";
 import {
   fixToolPairs,
   fixToolAdjacency,
@@ -137,6 +133,18 @@ import { sanitizeReasoningEffortForProvider } from "./base/reasoningEffort.ts";
 export { sanitizeReasoningEffortForProvider } from "./base/reasoningEffort.ts";
 import { mergeAbortSignals } from "./base/mergeAbortSignals.ts";
 export { mergeAbortSignals } from "./base/mergeAbortSignals.ts";
+import { assertValidationCredentials, validationFetch } from "./base/validationDispatch.ts";
+import type { ProviderCredentials, StrictValidationDispatch } from "./base/validationDispatch.ts";
+export type { ProviderCredentials, StrictValidationDispatch } from "./base/validationDispatch.ts";
+import { applyReasoningEffortRecovery } from "./base/reasoningEffortRecovery.ts";
+
+function parseSerializedBody(bodyString: string): unknown {
+  try {
+    return JSON.parse(bodyString);
+  } catch {
+    return bodyString;
+  }
+}
 
 /**
  * Sanitizes a custom API path to prevent path traversal attacks.
@@ -172,19 +180,6 @@ export type ProviderConfig = {
   timeoutMs?: number;
   fetchStartTimeoutCapMs?: number;
   format?: string;
-};
-
-export type ProviderCredentials = {
-  accessToken?: string;
-  refreshToken?: string;
-  apiKey?: string;
-  email?: string | null;
-  projectId?: string | null;
-  expiresAt?: string;
-  connectionId?: string; // T07: used for API key rotation index
-  maxConcurrent?: number | null;
-  providerSpecificData?: JsonRecord;
-  requestEndpointPath?: string;
 };
 
 export type ExecutorLog = {
@@ -225,6 +220,8 @@ export type ExecuteInput = {
   ) => Promise<void> | void;
   /** When true, skip the intra-URL 429 retry in execute() so the caller handles fallback. */
   skipUpstreamRetry?: boolean;
+  /** In-process capability; never accepted from an HTTP body or client header. */
+  validationDispatch?: StrictValidationDispatch;
   /** Request-scoped id for log attribution; absent off the chat path, never fabricated. */
   correlationId?: string | null;
   /** Delegated Context Editing (Claude only): when enabled, attach the
@@ -306,6 +303,8 @@ export type ExecutorExecuteResult =
       headers?: Record<string, string>;
       transformedBody?: unknown;
       transport?: string;
+      /** Wire model id actually sent upstream (from the serialized body). */
+      model?: unknown;
     };
 export class BaseExecutor {
   provider: string;
@@ -358,6 +357,30 @@ export class BaseExecutor {
 
   getCountTokensTimeoutMs() {
     return this.getTimeoutMs();
+  }
+
+  /**
+   * Build the URL from the payload-rule-prepared body (#12826): a rule may rewrite body.model
+   * (custom-model alias -> real id) and URL-path providers (Gemini /models/{model}:...) must
+   * follow it, or Google 404s on the alias. No string body.model -> executor model (unchanged).
+   */
+  buildUrlForBody(
+    model: string,
+    body: unknown,
+    stream: boolean,
+    urlIndex = 0,
+    credentials: ProviderCredentials | null = null,
+    upstreamRequestFormat?: string | null
+  ): string {
+    const bodyModel =
+      body && typeof body === "object" && !Array.isArray(body)
+        ? (body as Record<string, unknown>).model
+        : undefined;
+    const effectiveModel = typeof bodyModel === "string" && bodyModel ? bodyModel : model;
+    // Fork delta: keep forwarding the chatCore-resolved wire format. Upstream's
+    // body-aware entry point drops it, but 5 buildUrl overrides (cheaperinference,
+    // ghe-copilot, xai, default, github) choose Responses-vs-Chat from it.
+    return this.buildUrl(effectiveModel, stream, urlIndex, credentials, upstreamRequestFormat);
   }
 
   buildUrl(
@@ -719,6 +742,7 @@ export class BaseExecutor {
       contextEditing,
       upstreamRequestFormat,
     } = input;
+    assertValidationCredentials(input.validationDispatch, credentials);
     const fallbackCount = this.getFallbackCount();
     let lastError: unknown = null;
     let lastStatus = 0;
@@ -732,6 +756,8 @@ export class BaseExecutor {
     // routing state untouched; the reactive 401/403 path is probe-guarded
     // in chatCore (#9817).
     if (!isProbeContext() && this.needsRefresh(credentials)) {
+      // Outside the refresh catch below, which would swallow the rejection.
+      input.validationDispatch?.reject();
       try {
         // Fix A: wire onCredentialsRefreshed through runWithOnPersist so it runs
         // INSIDE the per-connection mutex inside getAccessToken. Not every
@@ -837,7 +863,14 @@ export class BaseExecutor {
         body,
         activeCredentials
       );
-      const url = this.buildUrl(model, stream, urlIndex, requestCredentials, upstreamRequestFormat);
+      const url = this.buildUrlForBody(
+        model,
+        body,
+        stream,
+        urlIndex,
+        requestCredentials,
+        upstreamRequestFormat
+      );
       const headers = this.buildHeaders(
         requestCredentials,
         stream,
@@ -951,7 +984,12 @@ export class BaseExecutor {
             : requestOptions;
 
           try {
-            return await fetch(requestUrl, optionsWithSignal);
+            return await validationFetch(
+              input.validationDispatch,
+              this.provider,
+              model,
+              requestCredentials
+            )(requestUrl, optionsWithSignal);
           } finally {
             if (timeoutId) clearTimeout(timeoutId);
           }
@@ -1402,7 +1440,7 @@ export class BaseExecutor {
         applyPeerTraceHeader(finalHeaders, clientHeaders, url);
         // Rides `anthropic-usage-limit: slow` once this account accepted the offer.
         const claudeSentSlow = claudeUsageLimit.applyHeader(finalHeaders, activeCredentials);
-        const serializedBody = prl.parseBody(bodyString);
+        const serializedBody = parseSerializedBody(bodyString);
         // #4307 — Preserve the non-enumerable tool-name cloak/remap reverse map
         // (`_toolNameMap`, set on the live `transformedBody` by
         // remapToolNamesInRequest / cloakThirdPartyToolNames) that the JSON
@@ -1553,41 +1591,26 @@ export class BaseExecutor {
           transformedBody &&
           typeof transformedBody === "object"
         ) {
-          const errText = await response
-            .clone()
-            .text()
-            .catch(() => "");
-          const acceptedValues = parseReasoningEffortEnum(errText);
-          if (acceptedValues) {
-            reasoningEffortClamped = true;
-            const learned = recordLearnedReasoningEffort(this.provider, model, acceptedValues);
-            if (learned && learned.size > 0) {
-              const beforeRetry = JSON.stringify(transformedBody);
-              transformedBody = sanitizeReasoningEffortForProvider(
-                transformedBody,
-                this.provider,
-                model,
-                log
-              );
-              const afterRetry = JSON.stringify(transformedBody);
-              if (beforeRetry === afterRetry) {
-                log?.info?.(
-                  "REASONING_SANITIZE",
-                  `Upstream ${response.status} rejected reasoning_effort on ${url} — learned ${[...learned].join(",")} but clamp was no-op for ${this.provider}/${model}, not retrying`
-                );
-              } else {
-                let retryBody = JSON.stringify(transformedBody);
-                if (usesClaudeCodeProtocol || this.provider === "claude") {
-                  retryBody = await signRequestBody(retryBody);
-                }
-                log?.info?.(
-                  "REASONING_SANITIZE",
-                  `Upstream ${response.status} rejected reasoning_effort on ${url} — clamped to ${[...learned].join(",")} and retrying (learned for ${this.provider}/${model})`
-                );
-                response = await fetchWithStartTimeout(url, { ...fetchOptions, body: retryBody });
+          const recovery = await applyReasoningEffortRecovery({
+            response,
+            url,
+            provider: this.provider,
+            model,
+            body: transformedBody,
+            fetchOptions,
+            fetchFn: fetchWithStartTimeout,
+            serializeBody: async (b) => {
+              let retryBody = JSON.stringify(b);
+              if (usesClaudeCodeProtocol || this.provider === "claude") {
+                retryBody = await signRequestBody(retryBody);
               }
-            }
-          }
+              return retryBody;
+            },
+            log,
+          });
+          if (recovery.attempted) reasoningEffortClamped = true;
+          response = recovery.response;
+          transformedBody = recovery.body;
         }
 
         // Generic reactive 400 field-downgrade; each field is stripped at most once.
@@ -1697,11 +1720,15 @@ export class BaseExecutor {
           }
         }
 
-        // Intra-URL retry: if 429 and we haven't exhausted per-URL retries, wait and retry the same URL
+        // Intra-URL retry: if 429 and we haven't exhausted per-URL retries, wait and retry the same URL.
+        // Skipped when the 429 carries a retry hint longer than the retry window (Gemini free-tier
+        // RetryInfo "37s", Retry-After: 60): the same-account retries cannot succeed and only burn
+        // upstream calls before the caller rotates to the next account.
         if (
           !skipUpstreamRetry &&
           response.status === HTTP_STATUS.RATE_LIMITED &&
-          (retryAttemptsByUrl[urlIndex] ?? 0) < BaseExecutor.RETRY_CONFIG.maxAttempts
+          (retryAttemptsByUrl[urlIndex] ?? 0) < BaseExecutor.RETRY_CONFIG.maxAttempts &&
+          !(await shouldSkipIntraRetryFor429(response))
         ) {
           retryAttemptsByUrl[urlIndex] = (retryAttemptsByUrl[urlIndex] ?? 0) + 1;
           const attempt = retryAttemptsByUrl[urlIndex];
@@ -1725,7 +1752,13 @@ export class BaseExecutor {
           continue;
         }
 
-        return { response, url, headers: finalHeaders, transformedBody: serializedBody };
+        return {
+          response,
+          url,
+          headers: finalHeaders,
+          transformedBody: serializedBody,
+          model: (serializedBody as Record<string, unknown> | null)?.model,
+        };
       } catch (error) {
         // Distinguish timeout errors from other abort errors
         const err = error instanceof Error ? error : new Error(String(error));

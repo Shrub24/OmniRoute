@@ -5,6 +5,7 @@
  * Each provider has its own request format and endpoint.
  */
 
+import { hasUnsafeModelIdSyntax } from "../utils/modelIdSafety.ts";
 import { LMARENA_DIRECT_IMAGE_MODELS } from "./providers/registry/lmarena/directModels.ts";
 import { SEGMIND_IMAGE_PROVIDER } from "./providers/registry/segmind/imageModels.ts";
 import { KIE_IMAGE_MODELS } from "./providers/registry/kie/imageModels.ts";
@@ -545,6 +546,10 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
       { id: "black-forest-labs/flux.2-max", name: "FLUX.2 Max (via OpenRouter)" },
       { id: "black-forest-labs/flux.2-pro", name: "FLUX.2 Pro (via OpenRouter)" },
       { id: "black-forest-labs/flux.2-flex", name: "FLUX.2 Flex (via OpenRouter)" },
+      { id: "openai/gpt-image-2.5-sunburst", name: "GPT Image 2.5 Sunburst (via OpenRouter)" },
+      { id: "openai/gpt-image-2.5-flare", name: "GPT Image 2.5 Flare (via OpenRouter)" },
+      { id: "microsoft/mai-image-2.6", name: "MAI Image 2.6 (via OpenRouter)" },
+      { id: "microsoft/mai-image-2.6-flash", name: "MAI Image 2.6 Flash (via OpenRouter)" },
     ],
     supportedSizes: ["1024x1024", "1024x1792", "1792x1024"],
   },
@@ -963,7 +968,7 @@ export function getImageProvider(providerId) {
  * Returns { provider, model }
  */
 export function parseImageModel(modelStr) {
-  if (!modelStr) return { provider: null, model: null };
+  if (!modelStr || hasUnsafeModelIdSyntax(modelStr)) return { provider: null, model: null };
 
   const directAlias = resolveImageModelAlias(modelStr);
   if (directAlias) {

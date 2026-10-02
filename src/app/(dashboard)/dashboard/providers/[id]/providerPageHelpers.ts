@@ -164,15 +164,21 @@ export function evaluateTestAllEntry(
         isTimeout?: boolean;
         isTransient?: boolean;
         isQuota?: boolean;
+        skipped?: boolean;
       }
     | null
     | undefined,
   autoHideFailed: boolean
 ): TestAllModelOutcome {
   const ok = entry?.status === "ok";
-  const transient = [entry?.rateLimited, entry?.isTimeout, entry?.isTransient, entry?.isQuota].some(
-    Boolean
-  );
+  // #14780: a skipped probe (web-session provider) was never dispatched — keep it visible.
+  const transient = [
+    entry?.rateLimited,
+    entry?.isTimeout,
+    entry?.isTransient,
+    entry?.isQuota,
+    entry?.skipped,
+  ].some(Boolean);
   return {
     status: ok ? "ok" : "error",
     // #9511: quota errors (isQuota) are surfaced on the icon but kept visible

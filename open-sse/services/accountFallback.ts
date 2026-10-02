@@ -22,11 +22,8 @@ import {
   honorsRuleLockScope,
 } from "../config/providerErrorRules.ts";
 import * as rot from "./rotationConfig.ts";
-import {
-  getPassthroughProviders,
-  getProviderCategory,
-  isLocalProvider,
-} from "../config/providerRegistry.ts";
+import { isRegistryPassthroughProvider } from "./passthroughRegistry.ts";
+import { getProviderCategory, isLocalProvider } from "../config/providerRegistry.ts";
 import {
   DEFAULT_RESILIENCE_SETTINGS,
   resolveResilienceSettings,
@@ -48,7 +45,6 @@ import {
 } from "../../src/shared/utils/classify429";
 import { recordProviderSuccess as resetCooldownFailureCount } from "./providerCooldownTracker.ts";
 import {
-  getProviderById,
   resolveProviderId,
   isLocalProvider as isLocalProviderId,
   isSelfHostedChatProvider,
@@ -100,7 +96,11 @@ import {
   buildRolling24hQuotaFallback,
   SUBSCRIPTION_QUOTA_COOLDOWN_MS,
 } from "./quotaTextCooldowns.ts";
-import { parseDayGranularityResetMs, parseIsoDateTimeResetMs, shouldPreserveQuotaSignals } from "./quotaResetParsing.ts";
+import {
+  parseDayGranularityResetMs,
+  parseIsoDateTimeResetMs,
+  shouldPreserveQuotaSignals,
+} from "./quotaResetParsing.ts";
 import { evictLockoutOverflow } from "./accountFallback/lockoutEviction.ts";
 export { MODEL_LOCKOUT_EVICTION_CAP } from "./accountFallback/lockoutEviction.ts";
 export { hasPerModelFailureScope } from "./accountFallback/perModelFailureScope.ts";
@@ -212,8 +212,8 @@ export const ACCOUNT_DEACTIVATED_SIGNALS = [
   "account has been disabled",
   "your account has been suspended",
   "this account is deactivated",
-  // AG (Antigravity/Google Cloud Code) permanent ban signals
-  "verify your account to continue",
+  // AG (Antigravity/Google Cloud Code) permanent ban signals. "verify your account to continue" is NOT
+  // a ban (operator-actionable) — see ACCOUNT_VERIFICATION_REQUIRED_SIGNALS in errorClassifier.ts.
   "this service has been disabled in this account for violation",
   "this service has been disabled in this account",
 ];
@@ -434,9 +434,7 @@ export function isProviderModelUnsupported400(status: number, errorText: string)
   return PROVIDER_MODEL_UNSUPPORTED_PATTERNS.some((p) => p.test(errorText));
 }
 
-// Malformed request patterns — the model rejected the message format but a different
-// provider/model in the combo may accept it.
-const MALFORMED_REQUEST_PATTERNS = [
+export const MALFORMED_REQUEST_PATTERNS = [
   /\bimproperly formed request\b/i,
   /\binvalid.*message.*format/i,
   /\bmessages must alternate\b/i,
@@ -462,12 +460,16 @@ export const RATE_LIMIT_TEXT_PATTERNS = [
 ];
 
 // Parameter validation errors — model-specific constraints (different models = different limits)
-const PARAM_VALIDATION_PATTERNS = [
+// #13757: include extra inputs and unrecognized field rejections from upstream schema validators
+export const PARAM_VALIDATION_PATTERNS = [
   /max_tokens.*illegal/i,
   /max_tokens.*must be/i,
   /max_tokens.*range/i,
   /parameter is illegal/i,
   /is illegal.*range/i,
+  /\b(?:extra|additional)\s+(?:input|inputs|propert(?:y|ies)|field|fields)\b.*(?:not permitted|not allowed)/i,
+  /\b(?:unknown|unrecognized|unexpected)\s+(?:field|fields|property|properties|parameter|parameters|input|inputs)\b/i,
+  /\binvalid\s+(?:field|fields|property|properties|parameter|parameters|input|inputs)\b/i,
 ];
 
 /**
@@ -933,6 +935,11 @@ export function clearModelLock(
   );
 }
 
+function isPassthroughCreditScope(provider: string | null | undefined): boolean {
+  const canonicalId = resolveProviderId(provider ?? "");
+  return isCompatibleProvider(canonicalId) || isRegistryPassthroughProvider(canonicalId);
+}
+
 /**
  * Whether a provider should use per-model lockouts instead of connection-wide cooldowns.
  * Compatible and passthrough providers multiplex multiple upstream models behind one
@@ -959,13 +966,12 @@ export function hasPerModelQuota(
   if (getCanonicalLockProvider(canonicalId) === "codex") return true;
   if (canonicalId === "gemini" || canonicalId === "github") return true;
   if (canonicalId === "antigravity" || canonicalId === "agy") return true;
-  if (getPassthroughProviders().has(canonicalId)) return true;
   // #11071: getPassthroughProviders() reads the open-sse REGISTRY. A provider can declare
   // passthroughModels:true in the SHARED registry (src/shared/constants/providers/) and be
   // absent from that set — 40 of them are, and they are neither local nor self-hosted, so the
   // branch below never reaches them either. Without this lookup a missing-model 404 on one of
   // those cools the whole connection instead of locking out the single model.
-  if (getProviderById(canonicalId)?.passthroughModels === true) return true;
+  if (isRegistryPassthroughProvider(canonicalId)) return true;
   if (isCompatibleProvider(canonicalId)) return true;
   if (isLocalProviderId(canonicalId) || isSelfHostedChatProvider(canonicalId)) return true;
   return false;
@@ -1297,13 +1303,13 @@ export function recordProviderSuccess(
   // recordProviderCooldown which increments it on each failure.
   resetCooldownFailureCount(provider, connectionId ?? undefined);
 
-  // Clear failure-dedup window so the next genuine failure is not suppressed.
   if (connectionId) {
     lastConnectionFailure.delete(`${provider}:${connectionId}`);
+    const providerBreaker = getProviderBreaker(provider);
+    if (providerBreaker && providerBreaker !== breaker && providerBreaker.canExecute()) {
+      providerBreaker._onSuccess();
+    }
   }
-
-  // Transition breaker on success, matching execute()'s behavior:
-  // HALF_OPEN -> CLOSED (probe success), CLOSED/DEGRADED -> decay failureCount.
   breaker._onSuccess();
 }
 
@@ -1970,18 +1976,18 @@ export function checkFallbackError(
       }
     }
 
-    // T10 (sub2api #1169) + #8247: credits/quota exhausted; *-compatible-* nicknames stay model-scoped
+    // T10 (sub2api #1169) + #8247: credits/quota exhausted; per-model-quota providers stay model-scoped
     // unless the body is an account-level Open Platform empty wallet.
-    if (
-      shouldUseQuotaSignal &&
-      isCreditsExhausted(errorStr) &&
-      (!isCompatibleProvider(provider) || isMoonshotAccountBalanceExhausted(errorStr))
-    ) {
+    if (shouldUseQuotaSignal && isCreditsExhausted(errorStr)) {
       return {
         shouldFallback: true,
         cooldownMs: COOLDOWN_MS.paymentRequired ?? 3600 * 1000, // 1h cooldown
         reason: RateLimitReason.QUOTA_EXHAUSTED,
-        creditsExhausted: true,
+        // Only passthrough/aggregator + *-compatible-* keys stay model-scoped; per-model-lock
+        // providers (codex, gemini, github, antigravity) keep account-level credits_exhausted.
+        ...(!isPassthroughCreditScope(provider) || isMoonshotAccountBalanceExhausted(errorStr)
+          ? { creditsExhausted: true }
+          : {}),
       };
     }
 
@@ -2057,7 +2063,8 @@ export function checkFallbackError(
     if (sessionResult) return sessionResult;
 
     const detectedRetryHint = detectRetryHint();
-    const quotaResetHintMs = detectedRetryHint?.retryAfterMs ?? parseRetryFromErrorText(errorStr, provider);
+    const quotaResetHintMs =
+      detectedRetryHint?.retryAfterMs ?? parseRetryFromErrorText(errorStr, provider);
     const quotaResetHintSource: RetryHintProvenance | undefined = detectedRetryHint
       ? detectedRetryHint.provenance
       : quotaResetHintMs
@@ -2231,8 +2238,8 @@ export function checkFallbackError(
     };
   }
 
-  // 400 — context overflow / malformed request / model access denied
-  if (status === HTTP_STATUS.BAD_REQUEST) {
+  // 400/422 — context overflow / malformed or rejected request shape / model access denied
+  if (status === HTTP_STATUS.BAD_REQUEST || status === HTTP_STATUS.UNPROCESSABLE_ENTITY) {
     const modelUnavailable = getOpencodeModelUnavailableMatch(provider, status, headers, errorStr);
     if (modelUnavailable) return ruleScopedResult(modelUnavailable);
     // Check structured error codes first (more reliable, no false positives)

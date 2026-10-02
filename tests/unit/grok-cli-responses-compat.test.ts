@@ -23,6 +23,12 @@ test("grok-cli exposes the authenticated grok-build model catalog", () => {
     })),
     [
       {
+        id: "grok-4.7",
+        name: "Grok 4.7",
+        contextLength: 500000,
+        targetFormat: "openai-responses",
+      },
+      {
         id: "grok-4.6",
         name: "Grok 4.6",
         contextLength: 500000,
@@ -122,7 +128,7 @@ test("grok-cli inherits BaseExecutor transport instead of buffering its own resp
       stream: true,
       credentials: {},
     });
-    // Without namespace tools the upstream Response is returned as-is.
+    // Without namespace or custom tools the upstream Response is returned as-is.
     assert.equal((result as { response: Response }).response, upstream);
   } finally {
     BaseExecutor.prototype.execute = originalExecute;
